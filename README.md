@@ -38,6 +38,32 @@ graph TD
 4. **LLM Generation**: All retrieved contexts and facts are merged into a strictly formatted prompt. A local Ollama instance (e.g., Llama 3.2 or Mistral) reasons over this massive context to generate a highly accurate, brief, and factual response.
 5. **UI Delivery**: The response is streamed back to the frontend, instantly displayed via a real-time custom typewriter effect, and permanently stored in SQLite.
 
+## Data Pipeline Workflow
+
+```mermaid
+graph TD
+    Fetch[fetch_data.py] -->|1. Scrape Wikipedia| Wiki[Wiki Text Files]
+    Fetch -->|2. Download YFinance| YF[Financial Data Files]
+    
+    Ingest[backend/ingest.py] -->|Reads| Wiki
+    Ingest -->|Reads| YF
+    
+    Ingest -->|Entity Extraction| NX[(NetworkX Graph)]
+    Ingest -->|Chunking & Embedding| Chroma[(ChromaDB Vector Store)]
+    
+    Communities[backend/communities.py] -->|Leiden Algorithm| NX
+    Communities -->|Hierarchical Grouping| Summaries[Community JSON Summaries]
+    
+    Vis[backend/visualize_graph.py] -->|Loads| NX
+    Vis -->|Exports HTML| Pyvis[Interactive Graph Visualization]
+```
+
+### Pipeline Summary
+1. **Data Acquisition**: The pipeline begins by scraping live Wikipedia articles and downloading the last 4 quarters of financial statements via YFinance for every NIFTY 50 company.
+2. **Knowledge Graph Construction**: The raw text and financial data are ingested, chunked, and embedded into a **ChromaDB** vector store for semantic search. Concurrently, strict entity relationships (Companies, Sectors, CEOs, Financials) are parsed into a **NetworkX** graph.
+3. **GraphRAG Communities**: A community detection algorithm (Leiden) groups related nodes (e.g., all companies in the IT sector). An LLM then generates hierarchical summaries of these communities and saves them as JSON to answer broad, multi-hop questions.
+4. **Interactive Visualization**: The massive NetworkX graph is converted into an interactive HTML visualization using **Pyvis**, allowing researchers to visually explore the interconnected NIFTY 50 universe.
+
 ## Key Features
 - **Hybrid Retrieval System:** Combines ChromaDB vector search with a NetworkX structured knowledge graph to understand multi-company relationships.
 - **Community GraphRAG:** Pre-computes high-level community summaries for broader analytical insights across sectors and metrics.
