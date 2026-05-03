@@ -1,0 +1,91 @@
+--- IDENTITY ---
+Name: SBI Life Insurance Company Limited
+CEO/MD: Mr. Amit  Jhingran
+Sector: Financial Services
+Industry: Insurance - Life
+
+--- PERFORMANCE (Last 4 Quarters) ---
+Income Statement:
+                                                              2026-03-31    2025-12-31    2025-06-30    2025-03-31    2024-12-31
+Tax Effect Of Unusual Items                                 0.000000e+00  0.000000e+00  0.000000e+00  0.000000e+00  0.000000e+00
+Tax Rate For Calcs                                          1.365600e-02  3.479300e-02  2.713800e-02  3.223800e-02  3.637100e-02
+Net Income From Continuing Operation Net Minority Interest  8.046400e+09  5.767400e+09  5.943700e+09  8.135100e+09  5.508200e+09
+Normalized Income                                           8.046400e+09  5.767400e+09  5.943700e+09  8.135100e+09  5.508200e+09
+Net Income From Continuing And Discontinued Operation       8.046400e+09  5.767400e+09  5.943700e+09  8.135100e+09  5.508200e+09
+Total Expenses                                              3.279150e+10  4.551272e+11  3.840199e+11  2.222176e+11  1.828878e+11
+Diluted Average Shares                                      1.003292e+09  1.003026e+09  1.002310e+09  1.003095e+09  1.003315e+09
+Basic Average Shares                                        1.003292e+09  1.003026e+09  1.002310e+09  1.001860e+09  1.001491e+09
+Diluted EPS                                                 8.020000e+00  5.750000e+00  5.930000e+00  8.110000e+00  5.490000e+00
+Basic EPS                                                   8.020000e+00  5.750000e+00  5.930000e+00  8.120000e+00  5.500000e+00
+Diluted NI Availto Com Stockholders                         8.046400e+09  5.767400e+09  5.943700e+09  8.135100e+09  5.508200e+09
+Net Income Common Stockholders                              8.046400e+09  5.767400e+09  5.943700e+09  8.135100e+09  5.508200e+09
+Net Income                                                  8.046400e+09  5.767400e+09  5.943700e+09  8.135100e+09  5.508200e+09
+Net Income Including Noncontrolling Interests               8.046400e+09  5.767400e+09  5.943700e+09  8.135100e+09  5.508200e+09
+Net Income Extraordinary                                    0.000000e+00  0.000000e+00  0.000000e+00  0.000000e+00  0.000000e+00
+Net Income Continuous Operations                            8.046400e+09  5.767400e+09  5.943700e+09  8.135100e+09  5.508200e+09
+Tax Provision                                               1.114000e+08  2.079000e+08  1.658000e+08  2.710000e+08  2.079000e+08
+Pretax Income                                               8.157800e+09  5.975300e+09  6.109500e+09  8.406100e+09  5.716100e+09
+Other Income Expense                                        0.000000e+00  0.000000e+00  0.000000e+00  0.000000e+00  0.000000e+00
+Other Operating Expenses                                   -1.544700e+09  1.775000e+09  5.885300e+09 -2.765000e+08  4.291200e+09
+Total Revenue                                               4.094920e+10  4.611025e+11  3.901294e+11  2.306235e+11  1.886039e+11
+Operating Revenue                                           4.094920e+10  4.611025e+11  3.901294e+11  2.306235e+11  1.886039e+11
+Net Policyholder Benefits And Claims                        1.721597e+11  1.536975e+11  1.053833e+11  1.308474e+11  1.295497e+11
+
+Balance Sheet:
+                                                    2026-03-31    2025-12-31    2025-06-30    2025-03-31    2024-12-31    2024-09-30
+Ordinary Shares Number                            1.003092e+09  1.002830e+09  1.002351e+09  1.002135e+09  1.002089e+09           NaN
+Share Issued                                      1.003092e+09  1.002830e+09  1.002351e+09  1.002135e+09  1.002089e+09           NaN
+Tangible Book Value                               1.908600e+11  1.901959e+11  1.783834e+11  1.697061e+11  1.659851e+11           NaN
+Invested Capital                                  1.908600e+11  1.901959e+11  1.783834e+11  1.698535e+11  1.659851e+11           NaN
+Net Tangible Assets                               1.908600e+11  1.901959e+11  1.783834e+11  1.697061e+11  1.659851e+11           NaN
+Common Stock Equity                               1.908600e+11  1.901959e+11  1.783834e+11  1.698535e+11  1.659851e+11           NaN
+Total Capitalization                              1.908600e+11  1.901959e+11  1.783834e+11  1.698535e+11  1.659851e+11           NaN
+Total Equity Gross Minority Interest              1.908600e+11  1.901959e+11  1.783834e+11  1.698535e+11  1.659851e+11           NaN
+Stockholders Equity                               1.908600e+11  1.901959e+11  1.783834e+11  1.698535e+11  1.659851e+11           NaN
+Other Equity Interest                             6.100000e+06  1.300000e+06  1.800000e+06  4.560000e+07  6.500000e+06           NaN
+Retained Earnings                                          NaN           NaN           NaN  1.563057e+11           NaN           NaN
+Additional Paid In Capital                                 NaN           NaN           NaN  1.556600e+09           NaN           NaN
+Capital Stock                                     1.003090e+10  1.002830e+10  1.002350e+10  1.002140e+10  1.002090e+10           NaN
+Common Stock                                      1.003090e+10  1.002830e+10  1.002350e+10  1.002140e+10  1.002090e+10           NaN
+Total Liabilities Net Minority Interest           4.809599e+12  5.016513e+12  4.672419e+12  4.401101e+12  4.345024e+12           NaN
+Derivative Product Liabilities                             NaN           NaN           NaN  1.048850e+10           NaN           NaN
+Non Current Deferred Taxes Liabilities                     NaN           NaN           NaN  0.000000e+00           NaN           NaN
+Long Term Provisions                              4.844900e+09  5.338700e+09  4.252600e+09  3.814200e+09  3.887400e+09           NaN
+Payables                                                   NaN           NaN           NaN  3.689000e+10           NaN           NaN
+Other Payable                                              NaN           NaN           NaN  8.906000e+08           NaN           NaN
+Total Tax Payable                                          NaN           NaN           NaN  4.651900e+09           NaN           NaN
+Accounts Payable                                           NaN           NaN           NaN  3.134750e+10           NaN           NaN
+Total Assets                                      5.000459e+12  5.206709e+12  4.850802e+12  4.570954e+12  4.511010e+12           NaN
+Financial Assets                                           NaN           NaN           NaN  1.147180e+10           NaN           NaN
+Investments And Advances                          2.274230e+12  2.275394e+12  2.083111e+12  1.657014e+12  1.919784e+12           NaN
+Investmentin Financial Assets                     2.274230e+12  2.275394e+12  2.083111e+12  1.655287e+12  1.919784e+12           NaN
+Available For Sale Securities                     2.274230e+12  2.275394e+12  2.083111e+12  3.030383e+11  1.919784e+12           NaN
+Long Term Equity Investment                                NaN           NaN           NaN  0.000000e+00           NaN           NaN
+Investmentsin Subsidiariesat Cost                          NaN           NaN           NaN  0.000000e+00           NaN           NaN
+Investment Properties                                      NaN           NaN           NaN  3.150299e+11           NaN           NaN
+Goodwill And Other Intangible Assets                       NaN           NaN           NaN  1.474000e+08           NaN           NaN
+Other Intangible Assets                                    NaN           NaN           NaN  1.474000e+08           NaN           NaN
+Goodwill                                                   NaN           NaN           NaN  0.000000e+00           NaN           NaN
+Net PPE                                           6.876900e+09  6.371100e+09  6.186000e+09  5.755900e+09  5.645200e+09           NaN
+Accumulated Depreciation                                   NaN           NaN           NaN -5.011600e+09           NaN           NaN
+Gross PPE                                                  NaN           NaN           NaN  1.076750e+10           NaN           NaN
+Construction In Progress                                   NaN           NaN           NaN  1.002000e+08           NaN           NaN
+Other Properties                                           NaN           NaN           NaN  2.500000e+06           NaN           NaN
+Machinery Furniture Equipment                              NaN           NaN           NaN  4.816300e+09           NaN           NaN
+Buildings And Improvements                                 NaN           NaN           NaN  4.086000e+09           NaN           NaN
+Land And Improvements                                      NaN           NaN           NaN  1.762500e+09           NaN           NaN
+Prepaid Assets                                             NaN           NaN           NaN  1.244000e+09  6.421390e+10  7.401020e+10
+Receivables Adjustments Allowances                         NaN           NaN           NaN -4.000000e+05           NaN           NaN
+Other Receivables                                          NaN           NaN           NaN  4.151020e+10           NaN           NaN
+Taxes Receivable                                           NaN           NaN           NaN  2.976200e+09           NaN           NaN
+Accounts Receivable                                        NaN           NaN           NaN  7.880200e+09           NaN           NaN
+Cash Cash Equivalents And Short Term Investments  3.207940e+10  1.914360e+10  2.440030e+10  1.956270e+10  4.152690e+10           NaN
+Other Short Term Investments                               NaN           NaN           NaN  1.726900e+09           NaN           NaN
+Cash And Cash Equivalents                         3.207940e+10  1.914360e+10  2.440030e+10  1.783580e+10  4.152690e+10           NaN
+
+--- SHAREHOLDING RELATIONSHIPS ---
+Breakdown                         Value
+insidersPercentHeld             0.58469
+institutionsPercentHeld         0.29820
+institutionsFloatPercentHeld    0.71801
+institutionsCount             240.00000

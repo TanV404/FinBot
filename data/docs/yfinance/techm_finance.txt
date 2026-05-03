@@ -1,0 +1,143 @@
+--- IDENTITY ---
+Name: Tech Mahindra Limited
+CEO/MD: Mr. Mohit  Joshi
+Sector: Technology
+Industry: Information Technology Services
+
+--- PERFORMANCE (Last 4 Quarters) ---
+Income Statement:
+                                                              2026-03-31    2025-12-31    2025-06-30    2025-03-31    2024-12-31
+Tax Effect Of Unusual Items                                 0.000000e+00 -6.995057e+08  0.000000e+00 -6.009282e+07  0.000000e+00
+Tax Rate For Calcs                                          2.424890e-01  2.567940e-01  3.023920e-01  2.201200e-01  2.378600e-01
+Normalized EBITDA                                           2.360500e+10  2.344800e+10  2.154000e+10  2.011600e+10  1.832100e+10
+Total Unusual Items                                         0.000000e+00 -2.724000e+09  0.000000e+00  0.000000e+00  0.000000e+00
+Total Unusual Items Excluding Goodwill                      0.000000e+00 -2.724000e+09  0.000000e+00 -2.730000e+08  0.000000e+00
+Net Income From Continuing Operation Net Minority Interest  1.353800e+10  1.122000e+10  1.140600e+10  1.166700e+10  9.832000e+09
+Reconciled Depreciation                                     4.811000e+09  4.737000e+09  4.581000e+09  4.621000e+09  4.588000e+09
+Reconciled Cost Of Revenue                                  9.590800e+10  9.105300e+10  8.809700e+10  8.716200e+10  8.883100e+10
+EBITDA                                                      2.360500e+10  2.072400e+10  2.154000e+10  2.011600e+10  1.832100e+10
+EBIT                                                        1.879400e+10  1.598700e+10  1.695900e+10  1.549500e+10  1.373300e+10
+Net Interest Income                                        -8.880000e+08 -9.360000e+08 -7.780000e+08 -8.530000e+08 -7.590000e+08
+Interest Expense                                            8.880000e+08  9.360000e+08  7.780000e+08  8.530000e+08  7.590000e+08
+Normalized Income                                           1.353800e+10  1.324449e+10  1.140600e+10  1.215291e+10  9.832000e+09
+Net Income From Continuing And Discontinued Operation       1.353800e+10  1.122000e+10  1.140600e+10  1.166700e+10  9.832000e+09
+Total Expenses                                              1.299190e+11  1.250130e+11  1.187410e+11  1.197870e+11  1.193540e+11
+Diluted Average Shares                                      8.883202e+08  8.876582e+08  8.869362e+08  8.872243e+08  8.873646e+08
+Basic Average Shares                                        8.865750e+08  8.862559e+08  8.862471e+08  8.858770e+08  8.857658e+08
+Diluted EPS                                                 1.524000e+01  1.264000e+01  1.286000e+01  1.315000e+01  1.108000e+01
+Basic EPS                                                   1.527000e+01  1.266000e+01  1.287000e+01  1.317000e+01  1.110000e+01
+Diluted NI Availto Com Stockholders                         1.353800e+10  1.122000e+10  1.140600e+10  1.166700e+10  9.832000e+09
+Net Income Common Stockholders                              1.353800e+10  1.122000e+10  1.140600e+10  1.166700e+10  9.832000e+09
+Otherunder Preferred Stock Dividend                         0.000000e+00  0.000000e+00  0.000000e+00  0.000000e+00  0.000000e+00
+Net Income                                                  1.353800e+10  1.122000e+10  1.140600e+10  1.166700e+10  9.832000e+09
+Minority Interests                                         -2.600000e+07  3.400000e+07  1.180000e+08  2.480000e+08 -5.600000e+07
+Net Income Including Noncontrolling Interests               1.356400e+10  1.118600e+10  1.128800e+10  1.141900e+10  9.888000e+09
+Net Income Continuous Operations                            1.356400e+10  1.118600e+10  1.128800e+10  1.141900e+10  9.888000e+09
+Tax Provision                                               4.342000e+09  3.865000e+09  4.893000e+09  3.223000e+09  3.086000e+09
+Pretax Income                                               1.790600e+10  1.505100e+10  1.618100e+10  1.464200e+10  1.297400e+10
+Other Non Operating Income Expenses                        -2.047000e+09 -2.170000e+08  2.183000e+09  1.727000e+09  1.650000e+08
+Special Income Charges                                      0.000000e+00 -2.724000e+09  0.000000e+00 -2.730000e+08  0.000000e+00
+Other Special Charges                                                NaN  2.724000e+09           NaN -3.400000e+07           NaN
+Net Non Operating Interest Income Expense                  -8.880000e+08 -9.360000e+08 -7.780000e+08 -8.530000e+08 -7.590000e+08
+Interest Expense Non Operating                              8.880000e+08  9.360000e+08  7.780000e+08  8.530000e+08  7.590000e+08
+Operating Income                                            2.084200e+10  1.891900e+10  1.477100e+10  1.405300e+10  1.350200e+10
+Operating Expense                                           3.401100e+10  3.396000e+10  3.064400e+10  3.262500e+10  3.052300e+10
+Other Operating Expenses                                    2.920000e+10  2.922300e+10  2.606300e+10  2.800400e+10  2.593500e+10
+Depreciation And Amortization In Income Statement           4.811000e+09  4.737000e+09  4.581000e+09  4.621000e+09  4.588000e+09
+Depreciation Income Statement                               4.811000e+09  4.737000e+09  4.581000e+09  4.621000e+09  4.588000e+09
+Gross Profit                                                5.485300e+10  5.287900e+10  4.541500e+10  4.667800e+10  4.402500e+10
+Cost Of Revenue                                             9.590800e+10  9.105300e+10  8.809700e+10  8.716200e+10  8.883100e+10
+Total Revenue                                               1.507610e+11  1.439320e+11  1.335120e+11  1.338400e+11  1.328560e+11
+Operating Revenue                                           1.507610e+11  1.439320e+11  1.335120e+11  1.338400e+11  1.328560e+11
+
+Balance Sheet:
+                                                                        2026-03-31   2025-09-30    2025-03-31    2024-09-30
+Treasury Shares Number                                                9.423563e+07          NaN  9.423563e+07  9.423563e+07
+Ordinary Shares Number                                                8.856056e+08  885379893.0  8.847581e+08  8.841139e+08
+Share Issued                                                          9.798413e+08  979615522.0  9.789937e+08  9.783495e+08
+Total Debt                                                            2.186200e+10          NaN  2.025200e+10  2.035100e+10
+Tangible Book Value                                                   1.918950e+11          NaN  1.731310e+11  1.615290e+11
+Invested Capital                                                      2.968500e+11          NaN  2.783290e+11  2.741400e+11
+Working Capital                                                       1.307720e+11          NaN  1.100520e+11  1.039430e+11
+Net Tangible Assets                                                   1.918950e+11          NaN  1.731310e+11  1.615290e+11
+Capital Lease Obligations                                             2.116600e+10          NaN  1.553800e+10  1.067200e+10
+Common Stock Equity                                                   2.961540e+11          NaN  2.736150e+11  2.644610e+11
+Total Capitalization                                                  2.961540e+11          NaN  2.736150e+11  2.655780e+11
+Total Equity Gross Minority Interest                                  3.007700e+11          NaN  2.779170e+11  2.689790e+11
+Minority Interest                                                     4.616000e+09          NaN  4.302000e+09  4.518000e+09
+Stockholders Equity                                                   2.961540e+11          NaN  2.736150e+11  2.644610e+11
+Other Equity Interest                                                 2.917260e+11          NaN  2.177000e+09  2.600400e+11
+Retained Earnings                                                              NaN          NaN  2.310510e+11           NaN
+Additional Paid In Capital                                                     NaN          NaN  1.775300e+10           NaN
+Capital Stock                                                         4.428000e+09          NaN  4.424000e+09  4.421000e+09
+Common Stock                                                          4.428000e+09          NaN  4.424000e+09  4.421000e+09
+Total Liabilities Net Minority Interest                               1.929240e+11          NaN  1.670280e+11  1.592880e+11
+Total Non Current Liabilities Net Minority Interest                   4.794900e+10          NaN  4.028800e+10  3.736500e+10
+Other Non Current Liabilities                                         1.233700e+10          NaN  1.230400e+10  1.258200e+10
+Derivative Product Liabilities                                                 NaN          NaN  1.450000e+08           NaN
+Non Current Pension And Other Postretirement Benefit Plans                     NaN          NaN  1.402700e+10           NaN
+Non Current Deferred Revenue                                                   NaN          NaN  4.600000e+07           NaN
+Non Current Deferred Taxes Liabilities                                2.017000e+09          NaN  2.279000e+09  2.531000e+09
+Long Term Debt And Capital Lease Obligation                           1.588800e+10          NaN  1.147200e+10  8.152000e+09
+Long Term Capital Lease Obligation                                    1.588800e+10          NaN  1.147200e+10  7.035000e+09
+Long Term Debt                                                                 NaN          NaN  0.000000e+00  1.117000e+09
+Long Term Provisions                                                  1.715900e+10          NaN  1.402700e+10  1.338900e+10
+Current Liabilities                                                   1.449750e+11          NaN  1.267400e+11  1.219230e+11
+Other Current Liabilities                                             2.511900e+10          NaN  3.990000e+08  2.050800e+10
+Current Debt And Capital Lease Obligation                             5.974000e+09          NaN  8.780000e+09  1.219900e+10
+Current Capital Lease Obligation                                      5.278000e+09          NaN  4.066000e+09  3.637000e+09
+Current Debt                                                          6.960000e+08          NaN  4.714000e+09  8.562000e+09
+Current Provisions                                                    1.208600e+10          NaN  1.277000e+10  1.277100e+10
+Payables                                                              7.186700e+10          NaN  7.087400e+10  5.360900e+10
+Other Payable                                                                  NaN          NaN  8.711000e+09           NaN
+Dividends Payable                                                              NaN          NaN  3.450000e+08           NaN
+Total Tax Payable                                                     2.146700e+10          NaN  1.771000e+10  1.574700e+10
+Accounts Payable                                                      5.040000e+10          NaN  4.410800e+10  3.786200e+10
+Total Assets                                                          4.936940e+11          NaN  4.449450e+11  4.282670e+11
+Total Non Current Assets                                              2.179470e+11          NaN  2.081530e+11  2.024010e+11
+Other Non Current Assets                                              1.221900e+10          NaN  1.062700e+10  7.542000e+09
+Non Current Prepaid Assets                                                     NaN          NaN  4.750000e+09           NaN
+Non Current Deferred Assets                                                    NaN          NaN  7.473000e+09           NaN
+Non Current Deferred Taxes Assets                                     2.186400e+10          NaN  1.857300e+10  1.648600e+10
+Financial Assets                                                               NaN          NaN  6.390000e+08           NaN
+Investmentin Financial Assets                                         3.915000e+09          NaN  2.358000e+09  9.392000e+09
+Available For Sale Securities                                         3.915000e+09          NaN  9.000000e+06  9.392000e+09
+Financial Assets Designatedas Fair Value Through Profitor Loss Total           NaN          NaN  2.349000e+09           NaN
+Long Term Equity Investment                                           5.500000e+08          NaN  5.390000e+08  4.770000e+08
+Investment Properties                                                 3.230000e+08          NaN  3.400000e+08  3.490000e+08
+Goodwill And Other Intangible Assets                                  1.042590e+11          NaN  1.004840e+11  1.029320e+11
+Other Intangible Assets                                               1.969900e+10          NaN  2.349100e+10  2.643800e+10
+Goodwill                                                              8.456000e+10          NaN  7.699300e+10  7.649400e+10
+Net PPE                                                               4.432600e+10          NaN  3.919700e+10  3.500600e+10
+Accumulated Depreciation                                                       NaN          NaN -1.004900e+11           NaN
+Gross PPE                                                             4.432600e+10          NaN  1.396870e+11  3.500600e+10
+Construction In Progress                                              2.680000e+08          NaN  2.060000e+08  1.090000e+08
+Other Properties                                                      4.405800e+10          NaN  3.899100e+10  3.489700e+10
+Machinery Furniture Equipment                                                  NaN          NaN  8.020900e+10           NaN
+Buildings And Improvements                                                     NaN          NaN  5.717600e+10           NaN
+Land And Improvements                                                          NaN          NaN  2.096000e+09           NaN
+Properties                                                                     NaN          NaN  0.000000e+00           NaN
+Current Assets                                                        2.757470e+11          NaN  2.367920e+11  2.258660e+11
+Other Current Assets                                                  5.224300e+10          NaN  4.245500e+10  3.860700e+10
+Hedging Assets Current                                                         NaN          NaN  6.360000e+08           NaN
+Current Deferred Assets                                                        NaN          NaN  6.847000e+09           NaN
+Restricted Cash                                                                NaN          NaN  5.620000e+08           NaN
+Prepaid Assets                                                                 NaN          NaN  2.069100e+10           NaN
+Inventory                                                             1.042000e+09          NaN  3.940000e+08  3.900000e+08
+Raw Materials                                                                  NaN          NaN  3.940000e+08           NaN
+Other Receivables                                                     5.820800e+10          NaN  6.802800e+10  4.930200e+10
+Accounts Receivable                                                   7.536900e+10          NaN  6.548600e+10  7.062200e+10
+Allowance For Doubtful Accounts Receivable                                     NaN          NaN -1.156600e+10           NaN
+Gross Accounts Receivable                                                      NaN          NaN  7.705200e+10           NaN
+Cash Cash Equivalents And Short Term Investments                      8.888500e+10          NaN  7.407000e+10  6.694500e+10
+Other Short Term Investments                                          3.842400e+10          NaN  3.088500e+10  2.604900e+10
+Cash And Cash Equivalents                                             5.046100e+10          NaN  4.318500e+10  4.089600e+10
+Cash Equivalents                                                               NaN          NaN  9.965000e+09           NaN
+Cash Financial                                                                 NaN          NaN  3.322000e+10           NaN
+
+--- SHAREHOLDING RELATIONSHIPS ---
+Breakdown                         Value
+insidersPercentHeld             0.36615
+institutionsPercentHeld         0.43931
+institutionsFloatPercentHeld    0.69308
+institutionsCount             229.00000

@@ -1,0 +1,980 @@
+<html>
+    <head>
+        <meta charset="utf-8">
+        
+            <script>function neighbourhoodHighlight(params) {
+  // console.log("in nieghbourhoodhighlight");
+  allNodes = nodes.get({ returnType: "Object" });
+  // originalNodes = JSON.parse(JSON.stringify(allNodes));
+  // if something is selected:
+  if (params.nodes.length > 0) {
+    highlightActive = true;
+    var i, j;
+    var selectedNode = params.nodes[0];
+    var degrees = 2;
+
+    // mark all nodes as hard to read.
+    for (let nodeId in allNodes) {
+      // nodeColors[nodeId] = allNodes[nodeId].color;
+      allNodes[nodeId].color = "rgba(200,200,200,0.5)";
+      if (allNodes[nodeId].hiddenLabel === undefined) {
+        allNodes[nodeId].hiddenLabel = allNodes[nodeId].label;
+        allNodes[nodeId].label = undefined;
+      }
+    }
+    var connectedNodes = network.getConnectedNodes(selectedNode);
+    var allConnectedNodes = [];
+
+    // get the second degree nodes
+    for (i = 1; i < degrees; i++) {
+      for (j = 0; j < connectedNodes.length; j++) {
+        allConnectedNodes = allConnectedNodes.concat(
+          network.getConnectedNodes(connectedNodes[j])
+        );
+      }
+    }
+
+    // all second degree nodes get a different color and their label back
+    for (i = 0; i < allConnectedNodes.length; i++) {
+      // allNodes[allConnectedNodes[i]].color = "pink";
+      allNodes[allConnectedNodes[i]].color = "rgba(150,150,150,0.75)";
+      if (allNodes[allConnectedNodes[i]].hiddenLabel !== undefined) {
+        allNodes[allConnectedNodes[i]].label =
+          allNodes[allConnectedNodes[i]].hiddenLabel;
+        allNodes[allConnectedNodes[i]].hiddenLabel = undefined;
+      }
+    }
+
+    // all first degree nodes get their own color and their label back
+    for (i = 0; i < connectedNodes.length; i++) {
+      // allNodes[connectedNodes[i]].color = undefined;
+      allNodes[connectedNodes[i]].color = nodeColors[connectedNodes[i]];
+      if (allNodes[connectedNodes[i]].hiddenLabel !== undefined) {
+        allNodes[connectedNodes[i]].label =
+          allNodes[connectedNodes[i]].hiddenLabel;
+        allNodes[connectedNodes[i]].hiddenLabel = undefined;
+      }
+    }
+
+    // the main node gets its own color and its label back.
+    // allNodes[selectedNode].color = undefined;
+    allNodes[selectedNode].color = nodeColors[selectedNode];
+    if (allNodes[selectedNode].hiddenLabel !== undefined) {
+      allNodes[selectedNode].label = allNodes[selectedNode].hiddenLabel;
+      allNodes[selectedNode].hiddenLabel = undefined;
+    }
+  } else if (highlightActive === true) {
+    // console.log("highlightActive was true");
+    // reset all nodes
+    for (let nodeId in allNodes) {
+      // allNodes[nodeId].color = "purple";
+      allNodes[nodeId].color = nodeColors[nodeId];
+      // delete allNodes[nodeId].color;
+      if (allNodes[nodeId].hiddenLabel !== undefined) {
+        allNodes[nodeId].label = allNodes[nodeId].hiddenLabel;
+        allNodes[nodeId].hiddenLabel = undefined;
+      }
+    }
+    highlightActive = false;
+  }
+
+  // transform the object into an array
+  var updateArray = [];
+  if (params.nodes.length > 0) {
+    for (let nodeId in allNodes) {
+      if (allNodes.hasOwnProperty(nodeId)) {
+        // console.log(allNodes[nodeId]);
+        updateArray.push(allNodes[nodeId]);
+      }
+    }
+    nodes.update(updateArray);
+  } else {
+    // console.log("Nothing was selected");
+    for (let nodeId in allNodes) {
+      if (allNodes.hasOwnProperty(nodeId)) {
+        // console.log(allNodes[nodeId]);
+        // allNodes[nodeId].color = {};
+        updateArray.push(allNodes[nodeId]);
+      }
+    }
+    nodes.update(updateArray);
+  }
+}
+
+function filterHighlight(params) {
+  allNodes = nodes.get({ returnType: "Object" });
+  // if something is selected:
+  if (params.nodes.length > 0) {
+    filterActive = true;
+    let selectedNodes = params.nodes;
+
+    // hiding all nodes and saving the label
+    for (let nodeId in allNodes) {
+      allNodes[nodeId].hidden = true;
+      if (allNodes[nodeId].savedLabel === undefined) {
+        allNodes[nodeId].savedLabel = allNodes[nodeId].label;
+        allNodes[nodeId].label = undefined;
+      }
+    }
+
+    for (let i=0; i < selectedNodes.length; i++) {
+      allNodes[selectedNodes[i]].hidden = false;
+      if (allNodes[selectedNodes[i]].savedLabel !== undefined) {
+        allNodes[selectedNodes[i]].label = allNodes[selectedNodes[i]].savedLabel;
+        allNodes[selectedNodes[i]].savedLabel = undefined;
+      }
+    }
+
+  } else if (filterActive === true) {
+    // reset all nodes
+    for (let nodeId in allNodes) {
+      allNodes[nodeId].hidden = false;
+      if (allNodes[nodeId].savedLabel !== undefined) {
+        allNodes[nodeId].label = allNodes[nodeId].savedLabel;
+        allNodes[nodeId].savedLabel = undefined;
+      }
+    }
+    filterActive = false;
+  }
+
+  // transform the object into an array
+  var updateArray = [];
+  if (params.nodes.length > 0) {
+    for (let nodeId in allNodes) {
+      if (allNodes.hasOwnProperty(nodeId)) {
+        updateArray.push(allNodes[nodeId]);
+      }
+    }
+    nodes.update(updateArray);
+  } else {
+    for (let nodeId in allNodes) {
+      if (allNodes.hasOwnProperty(nodeId)) {
+        updateArray.push(allNodes[nodeId]);
+      }
+    }
+    nodes.update(updateArray);
+  }
+}
+
+function selectNode(nodes) {
+  network.selectNodes(nodes);
+  neighbourhoodHighlight({ nodes: nodes });
+  return nodes;
+}
+
+function selectNodes(nodes) {
+  network.selectNodes(nodes);
+  filterHighlight({nodes: nodes});
+  return nodes;
+}
+
+function highlightFilter(filter) {
+  let selectedNodes = []
+  let selectedProp = filter['property']
+  if (filter['item'] === 'node') {
+    let allNodes = nodes.get({ returnType: "Object" });
+    for (let nodeId in allNodes) {
+      if (allNodes[nodeId][selectedProp] && filter['value'].includes((allNodes[nodeId][selectedProp]).toString())) {
+        selectedNodes.push(nodeId)
+      }
+    }
+  }
+  else if (filter['item'] === 'edge'){
+    let allEdges = edges.get({returnType: 'object'});
+    // check if the selected property exists for selected edge and select the nodes connected to the edge
+    for (let edge in allEdges) {
+      if (allEdges[edge][selectedProp] && filter['value'].includes((allEdges[edge][selectedProp]).toString())) {
+        selectedNodes.push(allEdges[edge]['from'])
+        selectedNodes.push(allEdges[edge]['to'])
+      }
+    }
+  }
+  selectNodes(selectedNodes)
+}</script>
+            <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/vis-network/9.1.2/dist/dist/vis-network.min.css" integrity="sha512-WgxfT5LWjfszlPHXRmBWHkV2eceiWTOBvrKCNbdgDYTHrT2AeLCGbF4sZlZw3UMN3WtL0tGUoIAKsu8mllg/XA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+            <script src="https://cdnjs.cloudflare.com/ajax/libs/vis-network/9.1.2/dist/vis-network.min.js" integrity="sha512-LnvoEWDFrqGHlHmDD2101OrLcbsfkrzoSpvtSQtxK3RMnRV0eOkhhBN2dXHKRrUU8p2DGRTk35n4O8nWSVe1mQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+            
+            
+            
+            
+            
+            
+                <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tom-select/2.0.0-rc.4/css/tom-select.min.css" integrity="sha512-43fHB3GLgZfz8QXl1RPQ8O66oIgv3po9cJ5erMt1c4QISq9dYb195T3vr5ImnJPXuVroKcGBPXBFKETW8jrPNQ==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+                <script src="https://cdnjs.cloudflare.com/ajax/libs/tom-select/2.0.0-rc.4/js/tom-select.complete.js" integrity="sha512-jeF9CfnvzDiw9G9xiksVjxR2lib44Gnovvkv+3CgCG6NXCD4gqlA5nDAVW5WjpA+i+/zKsUWV5xNEbW1X/HH0Q==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+            
+
+        
+<center>
+<h1></h1>
+</center>
+
+<!-- <link rel="stylesheet" href="../node_modules/vis/dist/vis.min.css" type="text/css" />
+<script type="text/javascript" src="../node_modules/vis/dist/vis.js"> </script>-->
+        <link
+          href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta3/dist/css/bootstrap.min.css"
+          rel="stylesheet"
+          integrity="sha384-eOJMYsd53ii+scO/bJGFsiCZc+5NDVN2yr8+0RDqr0Ql0h+rP48ckxlpbzKgwra6"
+          crossorigin="anonymous"
+        />
+        <script
+          src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta3/dist/js/bootstrap.bundle.min.js"
+          integrity="sha384-JEW9xMcG8R+pH31jmWH6WWP0WintQrMb4s7ZOdauHnUtxwoG2vI5DkLtS3qm9Ekf"
+          crossorigin="anonymous"
+        ></script>
+
+
+        <center>
+          <h1></h1>
+        </center>
+        <style type="text/css">
+
+             #mynetwork {
+                 width: 100%;
+                 height: 100vh;
+                 background-color: #0a0a0c;
+                 border: 1px solid lightgray;
+                 position: relative;
+                 float: left;
+             }
+
+             
+             #loadingBar {
+                 position:absolute;
+                 top:0px;
+                 left:0px;
+                 width: 100%;
+                 height: 100vh;
+                 background-color:rgba(200,200,200,0.8);
+                 -webkit-transition: all 0.5s ease;
+                 -moz-transition: all 0.5s ease;
+                 -ms-transition: all 0.5s ease;
+                 -o-transition: all 0.5s ease;
+                 transition: all 0.5s ease;
+                 opacity:1;
+             }
+
+             #bar {
+                 position:absolute;
+                 top:0px;
+                 left:0px;
+                 width:20px;
+                 height:20px;
+                 margin:auto auto auto auto;
+                 border-radius:11px;
+                 border:2px solid rgba(30,30,30,0.05);
+                 background: rgb(0, 173, 246); /* Old browsers */
+                 box-shadow: 2px 0px 4px rgba(0,0,0,0.4);
+             }
+
+             #border {
+                 position:absolute;
+                 top:10px;
+                 left:10px;
+                 width:500px;
+                 height:23px;
+                 margin:auto auto auto auto;
+                 box-shadow: 0px 0px 4px rgba(0,0,0,0.2);
+                 border-radius:10px;
+             }
+
+             #text {
+                 position:absolute;
+                 top:8px;
+                 left:530px;
+                 width:30px;
+                 height:50px;
+                 margin:auto auto auto auto;
+                 font-size:22px;
+                 color: #000000;
+             }
+
+             div.outerBorder {
+                 position:relative;
+                 top:400px;
+                 width:600px;
+                 height:44px;
+                 margin:auto auto auto auto;
+                 border:8px solid rgba(0,0,0,0.1);
+                 background: rgb(252,252,252); /* Old browsers */
+                 background: -moz-linear-gradient(top,  rgba(252,252,252,1) 0%, rgba(237,237,237,1) 100%); /* FF3.6+ */
+                 background: -webkit-gradient(linear, left top, left bottom, color-stop(0%,rgba(252,252,252,1)), color-stop(100%,rgba(237,237,237,1))); /* Chrome,Safari4+ */
+                 background: -webkit-linear-gradient(top,  rgba(252,252,252,1) 0%,rgba(237,237,237,1) 100%); /* Chrome10+,Safari5.1+ */
+                 background: -o-linear-gradient(top,  rgba(252,252,252,1) 0%,rgba(237,237,237,1) 100%); /* Opera 11.10+ */
+                 background: -ms-linear-gradient(top,  rgba(252,252,252,1) 0%,rgba(237,237,237,1) 100%); /* IE10+ */
+                 background: linear-gradient(to bottom,  rgba(252,252,252,1) 0%,rgba(237,237,237,1) 100%); /* W3C */
+                 filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#fcfcfc', endColorstr='#ededed',GradientType=0 ); /* IE6-9 */
+                 border-radius:72px;
+                 box-shadow: 0px 0px 10px rgba(0,0,0,0.2);
+             }
+             
+
+             
+
+             
+        </style>
+    
+    <style>
+      #loadingBar { display: none !important; }
+      .vis-configuration-wrapper {
+        top: 20px !important; right: 20px !important; left: auto !important;
+        width: 290px !important;
+        background: rgba(10,10,12,0.9) !important;
+        border: 1px solid #444 !important;
+        color: #eee !important;
+        border-radius: 6px !important;
+      }
+    </style>
+    </head>
+
+
+    <body>
+        <div class="card" style="width: 100%">
+            
+                <div id="select-menu" class="card-header">
+                    <div class="row no-gutters">
+                        <div class="col-10 pb-2">
+                            <select
+                            class="form-select"
+                            aria-label="Default select example"
+                            onchange="selectNode([value]);"
+                            id="select-node"
+                            placeholder="Select node..."
+                            >
+                                <option selected>Select a Node by ID</option>
+                                
+                                    <option value="ADANIENT">ADANIENT</option>
+                                
+                                    <option value="Mr. Rajeshbhai Shantilal Adani B.Com.">Mr. Rajeshbhai Shantilal Adani B.Com.</option>
+                                
+                                    <option value="Energy">Energy</option>
+                                
+                                    <option value="Thermal Coal">Thermal Coal</option>
+                                
+                                    <option value="Total Revenue">Total Revenue</option>
+                                
+                                    <option value="2025-12-31">2025-12-31</option>
+                                
+                                    <option value="2025-06-30">2025-06-30</option>
+                                
+                                    <option value="2025-03-31">2025-03-31</option>
+                                
+                                    <option value="2024-12-31">2024-12-31</option>
+                                
+                                    <option value="2024-09-30">2024-09-30</option>
+                                
+                                    <option value="Net Income">Net Income</option>
+                                
+                                    <option value="Net Debt">Net Debt</option>
+                                
+                                    <option value="Total Assets">Total Assets</option>
+                                
+                                    <option value="Gross Profit">Gross Profit</option>
+                                
+                                    <option value="Operating Income">Operating Income</option>
+                                
+                                    <option value="EBITDA">EBITDA</option>
+                                
+                                    <option value="ADANIENT – Insider Holding">ADANIENT – Insider Holding</option>
+                                
+                                    <option value="ADANIENT – Institutional Holding">ADANIENT – Institutional Holding</option>
+                                
+                                    <option value="ADANIPORTS">ADANIPORTS</option>
+                                
+                                    <option value="Mr. Ashwani  Gupta">Mr. Ashwani  Gupta</option>
+                                
+                                    <option value="Industrials">Industrials</option>
+                                
+                                    <option value="Marine Shipping">Marine Shipping</option>
+                                
+                                    <option value="ADANIPORTS – Insider Holding">ADANIPORTS – Insider Holding</option>
+                                
+                                    <option value="ADANIPORTS – Institutional Holding">ADANIPORTS – Institutional Holding</option>
+                                
+                                    <option value="APOLLOHOSP">APOLLOHOSP</option>
+                                
+                                    <option value="Dr. Suneeta  Reddy">Dr. Suneeta  Reddy</option>
+                                
+                                    <option value="Healthcare">Healthcare</option>
+                                
+                                    <option value="Medical Care Facilities">Medical Care Facilities</option>
+                                
+                                    <option value="APOLLOHOSP – Insider Holding">APOLLOHOSP – Insider Holding</option>
+                                
+                                    <option value="APOLLOHOSP – Institutional Holding">APOLLOHOSP – Institutional Holding</option>
+                                
+                                    <option value="ASIANPAINT">ASIANPAINT</option>
+                                
+                                    <option value="Mr. Amit  Syngle">Mr. Amit  Syngle</option>
+                                
+                                    <option value="Basic Materials">Basic Materials</option>
+                                
+                                    <option value="Specialty Chemicals">Specialty Chemicals</option>
+                                
+                                    <option value="2025-09-30">2025-09-30</option>
+                                
+                                    <option value="ASIANPAINT – Insider Holding">ASIANPAINT – Insider Holding</option>
+                                
+                                    <option value="ASIANPAINT – Institutional Holding">ASIANPAINT – Institutional Holding</option>
+                                
+                                    <option value="AXISBANK">AXISBANK</option>
+                                
+                                    <option value="Mr. Amitabh  Chaudhry">Mr. Amitabh  Chaudhry</option>
+                                
+                                    <option value="Financial Services">Financial Services</option>
+                                
+                                    <option value="Banks - Regional">Banks - Regional</option>
+                                
+                                    <option value="2026-03-31">2026-03-31</option>
+                                
+                                    <option value="AXISBANK – Insider Holding">AXISBANK – Insider Holding</option>
+                                
+                                    <option value="AXISBANK – Institutional Holding">AXISBANK – Institutional Holding</option>
+                                
+                                    <option value="BAJAJ-AUTO">BAJAJ-AUTO</option>
+                                
+                                    <option value="Mr. Rajivnayan Rahulkumar Bajaj">Mr. Rajivnayan Rahulkumar Bajaj</option>
+                                
+                                    <option value="Consumer Cyclical">Consumer Cyclical</option>
+                                
+                                    <option value="Auto Manufacturers">Auto Manufacturers</option>
+                                
+                                    <option value="BAJAJ-AUTO – Insider Holding">BAJAJ-AUTO – Insider Holding</option>
+                                
+                                    <option value="BAJAJ-AUTO – Institutional Holding">BAJAJ-AUTO – Institutional Holding</option>
+                                
+                                    <option value="BAJAJFINSV">BAJAJFINSV</option>
+                                
+                                    <option value="Mr. Sanjivnayan Rahulkumar Bajaj">Mr. Sanjivnayan Rahulkumar Bajaj</option>
+                                
+                                    <option value="Financial Conglomerates">Financial Conglomerates</option>
+                                
+                                    <option value="BAJAJFINSV – Insider Holding">BAJAJFINSV – Insider Holding</option>
+                                
+                                    <option value="BAJAJFINSV – Institutional Holding">BAJAJFINSV – Institutional Holding</option>
+                                
+                                    <option value="BAJFINANCE">BAJFINANCE</option>
+                                
+                                    <option value="Mr. Rajeev A. Jain">Mr. Rajeev A. Jain</option>
+                                
+                                    <option value="Credit Services">Credit Services</option>
+                                
+                                    <option value="BAJFINANCE – Insider Holding">BAJFINANCE – Insider Holding</option>
+                                
+                                    <option value="BAJFINANCE – Institutional Holding">BAJFINANCE – Institutional Holding</option>
+                                
+                                    <option value="BEL">BEL</option>
+                                
+                                    <option value="Mr. Manoj  Jain">Mr. Manoj  Jain</option>
+                                
+                                    <option value="Aerospace & Defense">Aerospace & Defense</option>
+                                
+                                    <option value="BEL – Insider Holding">BEL – Insider Holding</option>
+                                
+                                    <option value="BEL – Institutional Holding">BEL – Institutional Holding</option>
+                                
+                                    <option value="BHARTIARTL">BHARTIARTL</option>
+                                
+                                    <option value="Mr. Shashwat  Sharma">Mr. Shashwat  Sharma</option>
+                                
+                                    <option value="Communication Services">Communication Services</option>
+                                
+                                    <option value="Telecom Services">Telecom Services</option>
+                                
+                                    <option value="BHARTIARTL – Insider Holding">BHARTIARTL – Insider Holding</option>
+                                
+                                    <option value="BHARTIARTL – Institutional Holding">BHARTIARTL – Institutional Holding</option>
+                                
+                                    <option value="CIPLA">CIPLA</option>
+                                
+                                    <option value="Mr. Achin  Gupta">Mr. Achin  Gupta</option>
+                                
+                                    <option value="Drug Manufacturers - Specialty & Generic">Drug Manufacturers - Specialty & Generic</option>
+                                
+                                    <option value="CIPLA – Insider Holding">CIPLA – Insider Holding</option>
+                                
+                                    <option value="CIPLA – Institutional Holding">CIPLA – Institutional Holding</option>
+                                
+                                    <option value="COALINDIA">COALINDIA</option>
+                                
+                                    <option value="Mr. B.  Sairam">Mr. B.  Sairam</option>
+                                
+                                    <option value="COALINDIA – Insider Holding">COALINDIA – Insider Holding</option>
+                                
+                                    <option value="COALINDIA – Institutional Holding">COALINDIA – Institutional Holding</option>
+                                
+                                    <option value="DRREDDY">DRREDDY</option>
+                                
+                                    <option value="Mr. Gunupati Venkateswara Prasad B.E.">Mr. Gunupati Venkateswara Prasad B.E.</option>
+                                
+                                    <option value="DRREDDY – Insider Holding">DRREDDY – Insider Holding</option>
+                                
+                                    <option value="DRREDDY – Institutional Holding">DRREDDY – Institutional Holding</option>
+                                
+                                    <option value="EICHERMOT">EICHERMOT</option>
+                                
+                                    <option value="Mr. Govindarajan  Balakrishnan">Mr. Govindarajan  Balakrishnan</option>
+                                
+                                    <option value="EICHERMOT – Insider Holding">EICHERMOT – Insider Holding</option>
+                                
+                                    <option value="EICHERMOT – Institutional Holding">EICHERMOT – Institutional Holding</option>
+                                
+                                    <option value="ETERNAL">ETERNAL</option>
+                                
+                                    <option value="Mr. Albinder Singh Dhindsa">Mr. Albinder Singh Dhindsa</option>
+                                
+                                    <option value="Internet Retail">Internet Retail</option>
+                                
+                                    <option value="ETERNAL – Insider Holding">ETERNAL – Insider Holding</option>
+                                
+                                    <option value="ETERNAL – Institutional Holding">ETERNAL – Institutional Holding</option>
+                                
+                                    <option value="GRASIM">GRASIM</option>
+                                
+                                    <option value="Mr. Himanshu  Kapania">Mr. Himanshu  Kapania</option>
+                                
+                                    <option value="Building Materials">Building Materials</option>
+                                
+                                    <option value="GRASIM – Insider Holding">GRASIM – Insider Holding</option>
+                                
+                                    <option value="GRASIM – Institutional Holding">GRASIM – Institutional Holding</option>
+                                
+                                    <option value="HCLTECH">HCLTECH</option>
+                                
+                                    <option value="Mr. ChinnaSwamy  VijayaKumar">Mr. ChinnaSwamy  VijayaKumar</option>
+                                
+                                    <option value="Technology">Technology</option>
+                                
+                                    <option value="Information Technology Services">Information Technology Services</option>
+                                
+                                    <option value="HCLTECH – Insider Holding">HCLTECH – Insider Holding</option>
+                                
+                                    <option value="HCLTECH – Institutional Holding">HCLTECH – Institutional Holding</option>
+                                
+                                    <option value="HDFCBANK">HDFCBANK</option>
+                                
+                                    <option value="Mr. Sashidhar  Jagdishan">Mr. Sashidhar  Jagdishan</option>
+                                
+                                    <option value="HDFCBANK – Insider Holding">HDFCBANK – Insider Holding</option>
+                                
+                                    <option value="HDFCBANK – Institutional Holding">HDFCBANK – Institutional Holding</option>
+                                
+                                    <option value="HDFCLIFE">HDFCLIFE</option>
+                                
+                                    <option value="Ms. Vibha U. Padalkar">Ms. Vibha U. Padalkar</option>
+                                
+                                    <option value="Insurance - Life">Insurance - Life</option>
+                                
+                                    <option value="HDFCLIFE – Insider Holding">HDFCLIFE – Insider Holding</option>
+                                
+                                    <option value="HDFCLIFE – Institutional Holding">HDFCLIFE – Institutional Holding</option>
+                                
+                                    <option value="HINDALCO">HINDALCO</option>
+                                
+                                    <option value="Mr. Satish  Pai">Mr. Satish  Pai</option>
+                                
+                                    <option value="Aluminum">Aluminum</option>
+                                
+                                    <option value="HINDALCO – Insider Holding">HINDALCO – Insider Holding</option>
+                                
+                                    <option value="HINDALCO – Institutional Holding">HINDALCO – Institutional Holding</option>
+                                
+                                    <option value="HINDUNILVR">HINDUNILVR</option>
+                                
+                                    <option value="Ms. Priya  Nair">Ms. Priya  Nair</option>
+                                
+                                    <option value="Consumer Defensive">Consumer Defensive</option>
+                                
+                                    <option value="Household & Personal Products">Household & Personal Products</option>
+                                
+                                    <option value="HINDUNILVR – Insider Holding">HINDUNILVR – Insider Holding</option>
+                                
+                                    <option value="HINDUNILVR – Institutional Holding">HINDUNILVR – Institutional Holding</option>
+                                
+                                    <option value="ICICIBANK">ICICIBANK</option>
+                                
+                                    <option value="Mr. Sandeep  Bakhshi B.E.">Mr. Sandeep  Bakhshi B.E.</option>
+                                
+                                    <option value="ICICIBANK – Insider Holding">ICICIBANK – Insider Holding</option>
+                                
+                                    <option value="ICICIBANK – Institutional Holding">ICICIBANK – Institutional Holding</option>
+                                
+                                    <option value="INDIGO">INDIGO</option>
+                                
+                                    <option value="Mr. Rahul  Bhatia">Mr. Rahul  Bhatia</option>
+                                
+                                    <option value="Airlines">Airlines</option>
+                                
+                                    <option value="INDIGO – Insider Holding">INDIGO – Insider Holding</option>
+                                
+                                    <option value="INDIGO – Institutional Holding">INDIGO – Institutional Holding</option>
+                                
+                                    <option value="INFY">INFY</option>
+                                
+                                    <option value="Mr. Salil Satish Parekh">Mr. Salil Satish Parekh</option>
+                                
+                                    <option value="INFY – Insider Holding">INFY – Insider Holding</option>
+                                
+                                    <option value="INFY – Institutional Holding">INFY – Institutional Holding</option>
+                                
+                                    <option value="ITC">ITC</option>
+                                
+                                    <option value="Mr. Sanjiv  Puri">Mr. Sanjiv  Puri</option>
+                                
+                                    <option value="Tobacco">Tobacco</option>
+                                
+                                    <option value="ITC – Insider Holding">ITC – Insider Holding</option>
+                                
+                                    <option value="ITC – Institutional Holding">ITC – Institutional Holding</option>
+                                
+                                    <option value="JIOFIN">JIOFIN</option>
+                                
+                                    <option value="Mr. Hitesh Kumar Sethia">Mr. Hitesh Kumar Sethia</option>
+                                
+                                    <option value="Asset Management">Asset Management</option>
+                                
+                                    <option value="JIOFIN – Insider Holding">JIOFIN – Insider Holding</option>
+                                
+                                    <option value="JIOFIN – Institutional Holding">JIOFIN – Institutional Holding</option>
+                                
+                                    <option value="JSWSTEEL">JSWSTEEL</option>
+                                
+                                    <option value="Mr. Sajjan Kumar Jindal B.E.">Mr. Sajjan Kumar Jindal B.E.</option>
+                                
+                                    <option value="Steel">Steel</option>
+                                
+                                    <option value="JSWSTEEL – Insider Holding">JSWSTEEL – Insider Holding</option>
+                                
+                                    <option value="JSWSTEEL – Institutional Holding">JSWSTEEL – Institutional Holding</option>
+                                
+                                    <option value="KOTAKBANK">KOTAKBANK</option>
+                                
+                                    <option value="Mr. Ashok Valiram Vaswani">Mr. Ashok Valiram Vaswani</option>
+                                
+                                    <option value="KOTAKBANK – Insider Holding">KOTAKBANK – Insider Holding</option>
+                                
+                                    <option value="KOTAKBANK – Institutional Holding">KOTAKBANK – Institutional Holding</option>
+                                
+                                    <option value="LT">LT</option>
+                                
+                                    <option value="Mr. Sekharipuram Narayanan Subrahmanyan">Mr. Sekharipuram Narayanan Subrahmanyan</option>
+                                
+                                    <option value="Engineering & Construction">Engineering & Construction</option>
+                                
+                                    <option value="LT – Insider Holding">LT – Insider Holding</option>
+                                
+                                    <option value="LT – Institutional Holding">LT – Institutional Holding</option>
+                                
+                                    <option value="M&M">M&M</option>
+                                
+                                    <option value="Dr. Anish Dilip Shah Ph.D.">Dr. Anish Dilip Shah Ph.D.</option>
+                                
+                                    <option value="M&M – Insider Holding">M&M – Insider Holding</option>
+                                
+                                    <option value="M&M – Institutional Holding">M&M – Institutional Holding</option>
+                                
+                                    <option value="MARUTI">MARUTI</option>
+                                
+                                    <option value="Mr. Hisashi  Takeuchi">Mr. Hisashi  Takeuchi</option>
+                                
+                                    <option value="MARUTI – Insider Holding">MARUTI – Insider Holding</option>
+                                
+                                    <option value="MARUTI – Institutional Holding">MARUTI – Institutional Holding</option>
+                                
+                                    <option value="MAXHEALTH">MAXHEALTH</option>
+                                
+                                    <option value="Mr. Abhay  Soi">Mr. Abhay  Soi</option>
+                                
+                                    <option value="MAXHEALTH – Insider Holding">MAXHEALTH – Insider Holding</option>
+                                
+                                    <option value="MAXHEALTH – Institutional Holding">MAXHEALTH – Institutional Holding</option>
+                                
+                                    <option value="NESTLEIND">NESTLEIND</option>
+                                
+                                    <option value="Mr. Manish  Tiwary">Mr. Manish  Tiwary</option>
+                                
+                                    <option value="Packaged Foods">Packaged Foods</option>
+                                
+                                    <option value="NESTLEIND – Insider Holding">NESTLEIND – Insider Holding</option>
+                                
+                                    <option value="NESTLEIND – Institutional Holding">NESTLEIND – Institutional Holding</option>
+                                
+                                    <option value="NTPC">NTPC</option>
+                                
+                                    <option value="Mr. Gurdeep  Singh">Mr. Gurdeep  Singh</option>
+                                
+                                    <option value="Utilities">Utilities</option>
+                                
+                                    <option value="Utilities - Regulated Electric">Utilities - Regulated Electric</option>
+                                
+                                    <option value="NTPC – Insider Holding">NTPC – Insider Holding</option>
+                                
+                                    <option value="NTPC – Institutional Holding">NTPC – Institutional Holding</option>
+                                
+                                    <option value="ONGC">ONGC</option>
+                                
+                                    <option value="Mr. Arun Kumar Singh B.Sc., B.Sc. (Engg.)">Mr. Arun Kumar Singh B.Sc., B.Sc. (Engg.)</option>
+                                
+                                    <option value="Oil & Gas Integrated">Oil & Gas Integrated</option>
+                                
+                                    <option value="ONGC – Insider Holding">ONGC – Insider Holding</option>
+                                
+                                    <option value="ONGC – Institutional Holding">ONGC – Institutional Holding</option>
+                                
+                                    <option value="POWERGRID">POWERGRID</option>
+                                
+                                    <option value="Mr. Vamsi Rama Mohan Burra">Mr. Vamsi Rama Mohan Burra</option>
+                                
+                                    <option value="POWERGRID – Insider Holding">POWERGRID – Insider Holding</option>
+                                
+                                    <option value="POWERGRID – Institutional Holding">POWERGRID – Institutional Holding</option>
+                                
+                                    <option value="RELIANCE">RELIANCE</option>
+                                
+                                    <option value="Mr. Mukesh Dhirubhai Ambani">Mr. Mukesh Dhirubhai Ambani</option>
+                                
+                                    <option value="Oil & Gas Refining & Marketing">Oil & Gas Refining & Marketing</option>
+                                
+                                    <option value="RELIANCE – Insider Holding">RELIANCE – Insider Holding</option>
+                                
+                                    <option value="RELIANCE – Institutional Holding">RELIANCE – Institutional Holding</option>
+                                
+                                    <option value="SBILIFE">SBILIFE</option>
+                                
+                                    <option value="Mr. Amit  Jhingran">Mr. Amit  Jhingran</option>
+                                
+                                    <option value="SBILIFE – Insider Holding">SBILIFE – Insider Holding</option>
+                                
+                                    <option value="SBILIFE – Institutional Holding">SBILIFE – Institutional Holding</option>
+                                
+                                    <option value="SBIN">SBIN</option>
+                                
+                                    <option value="Mr. Rana Ashutosh Kumar Singh">Mr. Rana Ashutosh Kumar Singh</option>
+                                
+                                    <option value="SBIN – Insider Holding">SBIN – Insider Holding</option>
+                                
+                                    <option value="SBIN – Institutional Holding">SBIN – Institutional Holding</option>
+                                
+                                    <option value="SHRIRAMFIN">SHRIRAMFIN</option>
+                                
+                                    <option value="Mr. Parag  Sharma">Mr. Parag  Sharma</option>
+                                
+                                    <option value="SHRIRAMFIN – Insider Holding">SHRIRAMFIN – Insider Holding</option>
+                                
+                                    <option value="SHRIRAMFIN – Institutional Holding">SHRIRAMFIN – Institutional Holding</option>
+                                
+                                    <option value="SUNPHARMA">SUNPHARMA</option>
+                                
+                                    <option value="Mr. Kirti Wardhaman Ganorkar">Mr. Kirti Wardhaman Ganorkar</option>
+                                
+                                    <option value="SUNPHARMA – Insider Holding">SUNPHARMA – Insider Holding</option>
+                                
+                                    <option value="SUNPHARMA – Institutional Holding">SUNPHARMA – Institutional Holding</option>
+                                
+                                    <option value="TATACONSUM">TATACONSUM</option>
+                                
+                                    <option value="Mr. Sunil Alaric D'Souza">Mr. Sunil Alaric D'Souza</option>
+                                
+                                    <option value="TATACONSUM – Insider Holding">TATACONSUM – Insider Holding</option>
+                                
+                                    <option value="TATACONSUM – Institutional Holding">TATACONSUM – Institutional Holding</option>
+                                
+                                    <option value="TATASTEEL">TATASTEEL</option>
+                                
+                                    <option value="Mr. Thachat Viswanath Narendran">Mr. Thachat Viswanath Narendran</option>
+                                
+                                    <option value="TATASTEEL – Insider Holding">TATASTEEL – Insider Holding</option>
+                                
+                                    <option value="TATASTEEL – Institutional Holding">TATASTEEL – Institutional Holding</option>
+                                
+                                    <option value="TCS">TCS</option>
+                                
+                                    <option value="Mr. K.  Krithivasan B.E, M.Tech.">Mr. K.  Krithivasan B.E, M.Tech.</option>
+                                
+                                    <option value="TCS – Insider Holding">TCS – Insider Holding</option>
+                                
+                                    <option value="TCS – Institutional Holding">TCS – Institutional Holding</option>
+                                
+                                    <option value="TECHM">TECHM</option>
+                                
+                                    <option value="Mr. Mohit  Joshi">Mr. Mohit  Joshi</option>
+                                
+                                    <option value="TECHM – Insider Holding">TECHM – Insider Holding</option>
+                                
+                                    <option value="TECHM – Institutional Holding">TECHM – Institutional Holding</option>
+                                
+                                    <option value="TITAN">TITAN</option>
+                                
+                                    <option value="Mr. Ajoy  Chawla B.E., PGDM">Mr. Ajoy  Chawla B.E., PGDM</option>
+                                
+                                    <option value="Luxury Goods">Luxury Goods</option>
+                                
+                                    <option value="TITAN – Insider Holding">TITAN – Insider Holding</option>
+                                
+                                    <option value="TITAN – Institutional Holding">TITAN – Institutional Holding</option>
+                                
+                                    <option value="TMPV">TMPV</option>
+                                
+                                    <option value="Mr. Shailesh  Chandra">Mr. Shailesh  Chandra</option>
+                                
+                                    <option value="TMPV – Insider Holding">TMPV – Insider Holding</option>
+                                
+                                    <option value="TMPV – Institutional Holding">TMPV – Institutional Holding</option>
+                                
+                                    <option value="TRENT">TRENT</option>
+                                
+                                    <option value="Mr. Venkatesalu  Palaniswamy">Mr. Venkatesalu  Palaniswamy</option>
+                                
+                                    <option value="Apparel Retail">Apparel Retail</option>
+                                
+                                    <option value="TRENT – Insider Holding">TRENT – Insider Holding</option>
+                                
+                                    <option value="TRENT – Institutional Holding">TRENT – Institutional Holding</option>
+                                
+                                    <option value="ULTRACEMCO">ULTRACEMCO</option>
+                                
+                                    <option value="Mr. Kailash Chandra Jhanwar B.Com, C.S (Inter), FCA">Mr. Kailash Chandra Jhanwar B.Com, C.S (Inter), FCA</option>
+                                
+                                    <option value="ULTRACEMCO – Insider Holding">ULTRACEMCO – Insider Holding</option>
+                                
+                                    <option value="ULTRACEMCO – Institutional Holding">ULTRACEMCO – Institutional Holding</option>
+                                
+                                    <option value="WIPRO">WIPRO</option>
+                                
+                                    <option value="Mr. Srinivas  Pallia">Mr. Srinivas  Pallia</option>
+                                
+                                    <option value="WIPRO – Insider Holding">WIPRO – Insider Holding</option>
+                                
+                                    <option value="WIPRO – Institutional Holding">WIPRO – Institutional Holding</option>
+                                
+                            </select>
+                        </div>
+                        <div class="col-2 pb-2">
+                            <button type="button" class="btn btn-primary btn-block" onclick="neighbourhoodHighlight({nodes: []});">Reset Selection</button>
+                        </div>
+                    </div>
+                </div>
+            
+            
+            <div id="mynetwork" class="card-body"></div>
+        </div>
+
+        
+            <div id="loadingBar">
+              <div class="outerBorder">
+                <div id="text">0%</div>
+                <div id="border">
+                  <div id="bar"></div>
+                </div>
+              </div>
+            </div>
+        
+        
+
+        <script type="text/javascript">
+
+              // initialize global variables.
+              var edges;
+              var nodes;
+              var allNodes;
+              var allEdges;
+              var nodeColors;
+              var originalNodes;
+              var network;
+              var container;
+              var options, data;
+              var filter = {
+                  item : '',
+                  property : '',
+                  value : []
+              };
+
+              
+                  new TomSelect("#select-node",{
+                      create: false,
+                      sortField: {
+                          field: "text",
+                          direction: "asc"
+                      }
+                  });
+              
+
+              
+
+              // This method is responsible for drawing the graph, returns the drawn network
+              function drawGraph() {
+                  var container = document.getElementById('mynetwork');
+
+                  
+
+                  // parsing and collecting nodes and edges from the python
+                  nodes = new vis.DataSet([{"font": {"color": "white"}, "group": "Company", "id": "ADANIENT", "label": "ADANIENT", "shape": "dot", "size": 42, "title": "Company: ADANIENT | Adani Enterprises Limited"}, {"font": {"color": "white"}, "group": "Person", "id": "Mr. Rajeshbhai Shantilal Adani B.Com.", "label": "Mr. Rajeshbhai Shantilal Adani B.Com.", "shape": "dot", "size": 24, "title": "Person: Mr. Rajeshbhai Shantilal Adani B.Com."}, {"font": {"color": "white"}, "group": "Sector", "id": "Energy", "label": "Energy", "shape": "dot", "size": 28, "title": "Sector: Energy"}, {"font": {"color": "white"}, "group": "Industry", "id": "Thermal Coal", "label": "Thermal Coal", "shape": "dot", "size": 22, "title": "Industry: Thermal Coal"}, {"font": {"color": "white"}, "group": "FinancialMetric", "id": "Total Revenue", "label": "Total Revenue", "shape": "dot", "size": 16, "title": "FinancialMetric: Total Revenue"}, {"font": {"color": "white"}, "group": "TimePeriod", "id": "2025-12-31", "label": "2025-12-31", "shape": "dot", "size": 14, "title": "TimePeriod: 2025-12-31"}, {"font": {"color": "white"}, "group": "TimePeriod", "id": "2025-06-30", "label": "2025-06-30", "shape": "dot", "size": 14, "title": "TimePeriod: 2025-06-30"}, {"font": {"color": "white"}, "group": "TimePeriod", "id": "2025-03-31", "label": "2025-03-31", "shape": "dot", "size": 14, "title": "TimePeriod: 2025-03-31"}, {"font": {"color": "white"}, "group": "TimePeriod", "id": "2024-12-31", "label": "2024-12-31", "shape": "dot", "size": 14, "title": "TimePeriod: 2024-12-31"}, {"font": {"color": "white"}, "group": "TimePeriod", "id": "2024-09-30", "label": "2024-09-30", "shape": "dot", "size": 14, "title": "TimePeriod: 2024-09-30"}, {"font": {"color": "white"}, "group": "FinancialMetric", "id": "Net Income", "label": "Net Income", "shape": "dot", "size": 16, "title": "FinancialMetric: Net Income"}, {"font": {"color": "white"}, "group": "FinancialMetric", "id": "Net Debt", "label": "Net Debt", "shape": "dot", "size": 16, "title": "FinancialMetric: Net Debt"}, {"font": {"color": "white"}, "group": "FinancialMetric", "id": "Total Assets", "label": "Total Assets", "shape": "dot", "size": 16, "title": "FinancialMetric: Total Assets"}, {"font": {"color": "white"}, "group": "FinancialMetric", "id": "Gross Profit", "label": "Gross Profit", "shape": "dot", "size": 16, "title": "FinancialMetric: Gross Profit"}, {"font": {"color": "white"}, "group": "FinancialMetric", "id": "Operating Income", "label": "Operating Income", "shape": "dot", "size": 16, "title": "FinancialMetric: Operating Income"}, {"font": {"color": "white"}, "group": "FinancialMetric", "id": "EBITDA", "label": "EBITDA", "shape": "dot", "size": 16, "title": "FinancialMetric: EBITDA"}, {"font": {"color": "white"}, "group": "Shareholding", "id": "ADANIENT \u2013 Insider Holding", "label": "ADANIENT \u2013 Insider Holding", "shape": "dot", "size": 16, "title": "Shareholding: ADANIENT \u2013 Insider Holding | 77.3%"}, {"font": {"color": "white"}, "group": "Shareholding", "id": "ADANIENT \u2013 Institutional Holding", "label": "ADANIENT \u2013 Institutional Holding", "shape": "dot", "size": 16, "title": "Shareholding: ADANIENT \u2013 Institutional Holding | 14.4%"}, {"font": {"color": "white"}, "group": "Company", "id": "ADANIPORTS", "label": "ADANIPORTS", "shape": "dot", "size": 42, "title": "Company: ADANIPORTS | Adani Ports and Special Economic Zone Limited"}, {"font": {"color": "white"}, "group": "Person", "id": "Mr. Ashwani  Gupta", "label": "Mr. Ashwani  Gupta", "shape": "dot", "size": 24, "title": "Person: Mr. Ashwani  Gupta"}, {"font": {"color": "white"}, "group": "Sector", "id": "Industrials", "label": "Industrials", "shape": "dot", "size": 28, "title": "Sector: Industrials"}, {"font": {"color": "white"}, "group": "Industry", "id": "Marine Shipping", "label": "Marine Shipping", "shape": "dot", "size": 22, "title": "Industry: Marine Shipping"}, {"font": {"color": "white"}, "group": "Shareholding", "id": "ADANIPORTS \u2013 Insider Holding", "label": "ADANIPORTS \u2013 Insider Holding", "shape": "dot", "size": 16, "title": "Shareholding: ADANIPORTS \u2013 Insider Holding | 68.1%"}, {"font": {"color": "white"}, "group": "Shareholding", "id": "ADANIPORTS \u2013 Institutional Holding", "label": "ADANIPORTS \u2013 Institutional Holding", "shape": "dot", "size": 16, "title": "Shareholding: ADANIPORTS \u2013 Institutional Holding | 20.8%"}, {"font": {"color": "white"}, "group": "Company", "id": "APOLLOHOSP", "label": "APOLLOHOSP", "shape": "dot", "size": 42, "title": "Company: APOLLOHOSP | Apollo Hospitals Enterprise Limited"}, {"font": {"color": "white"}, "group": "Person", "id": "Dr. Suneeta  Reddy", "label": "Dr. Suneeta  Reddy", "shape": "dot", "size": 24, "title": "Person: Dr. Suneeta  Reddy"}, {"font": {"color": "white"}, "group": "Sector", "id": "Healthcare", "label": "Healthcare", "shape": "dot", "size": 28, "title": "Sector: Healthcare"}, {"font": {"color": "white"}, "group": "Industry", "id": "Medical Care Facilities", "label": "Medical Care Facilities", "shape": "dot", "size": 22, "title": "Industry: Medical Care Facilities"}, {"font": {"color": "white"}, "group": "Shareholding", "id": "APOLLOHOSP \u2013 Insider Holding", "label": "APOLLOHOSP \u2013 Insider Holding", "shape": "dot", "size": 16, "title": "Shareholding: APOLLOHOSP \u2013 Insider Holding | 28.0%"}, {"font": {"color": "white"}, "group": "Shareholding", "id": "APOLLOHOSP \u2013 Institutional Holding", "label": "APOLLOHOSP \u2013 Institutional Holding", "shape": "dot", "size": 16, "title": "Shareholding: APOLLOHOSP \u2013 Institutional Holding | 48.5%"}, {"font": {"color": "white"}, "group": "Company", "id": "ASIANPAINT", "label": "ASIANPAINT", "shape": "dot", "size": 42, "title": "Company: ASIANPAINT | Asian Paints Limited"}, {"font": {"color": "white"}, "group": "Person", "id": "Mr. Amit  Syngle", "label": "Mr. Amit  Syngle", "shape": "dot", "size": 24, "title": "Person: Mr. Amit  Syngle"}, {"font": {"color": "white"}, "group": "Sector", "id": "Basic Materials", "label": "Basic Materials", "shape": "dot", "size": 28, "title": "Sector: Basic Materials"}, {"font": {"color": "white"}, "group": "Industry", "id": "Specialty Chemicals", "label": "Specialty Chemicals", "shape": "dot", "size": 22, "title": "Industry: Specialty Chemicals"}, {"font": {"color": "white"}, "group": "TimePeriod", "id": "2025-09-30", "label": "2025-09-30", "shape": "dot", "size": 14, "title": "TimePeriod: 2025-09-30"}, {"font": {"color": "white"}, "group": "Shareholding", "id": "ASIANPAINT \u2013 Insider Holding", "label": "ASIANPAINT \u2013 Insider Holding", "shape": "dot", "size": 16, "title": "Shareholding: ASIANPAINT \u2013 Insider Holding | 52.9%"}, {"font": {"color": "white"}, "group": "Shareholding", "id": "ASIANPAINT \u2013 Institutional Holding", "label": "ASIANPAINT \u2013 Institutional Holding", "shape": "dot", "size": 16, "title": "Shareholding: ASIANPAINT \u2013 Institutional Holding | 27.0%"}, {"font": {"color": "white"}, "group": "Company", "id": "AXISBANK", "label": "AXISBANK", "shape": "dot", "size": 42, "title": "Company: AXISBANK | Axis Bank Limited"}, {"font": {"color": "white"}, "group": "Person", "id": "Mr. Amitabh  Chaudhry", "label": "Mr. Amitabh  Chaudhry", "shape": "dot", "size": 24, "title": "Person: Mr. Amitabh  Chaudhry"}, {"font": {"color": "white"}, "group": "Sector", "id": "Financial Services", "label": "Financial Services", "shape": "dot", "size": 28, "title": "Sector: Financial Services"}, {"font": {"color": "white"}, "group": "Industry", "id": "Banks - Regional", "label": "Banks - Regional", "shape": "dot", "size": 22, "title": "Industry: Banks - Regional"}, {"font": {"color": "white"}, "group": "TimePeriod", "id": "2026-03-31", "label": "2026-03-31", "shape": "dot", "size": 14, "title": "TimePeriod: 2026-03-31"}, {"font": {"color": "white"}, "group": "Shareholding", "id": "AXISBANK \u2013 Insider Holding", "label": "AXISBANK \u2013 Insider Holding", "shape": "dot", "size": 16, "title": "Shareholding: AXISBANK \u2013 Insider Holding | 2.6%"}, {"font": {"color": "white"}, "group": "Shareholding", "id": "AXISBANK \u2013 Institutional Holding", "label": "AXISBANK \u2013 Institutional Holding", "shape": "dot", "size": 16, "title": "Shareholding: AXISBANK \u2013 Institutional Holding | 69.8%"}, {"font": {"color": "white"}, "group": "Company", "id": "BAJAJ-AUTO", "label": "BAJAJ-AUTO", "shape": "dot", "size": 42, "title": "Company: BAJAJ-AUTO | Bajaj Auto Limited"}, {"font": {"color": "white"}, "group": "Person", "id": "Mr. Rajivnayan Rahulkumar Bajaj", "label": "Mr. Rajivnayan Rahulkumar Bajaj", "shape": "dot", "size": 24, "title": "Person: Mr. Rajivnayan Rahulkumar Bajaj"}, {"font": {"color": "white"}, "group": "Sector", "id": "Consumer Cyclical", "label": "Consumer Cyclical", "shape": "dot", "size": 28, "title": "Sector: Consumer Cyclical"}, {"font": {"color": "white"}, "group": "Industry", "id": "Auto Manufacturers", "label": "Auto Manufacturers", "shape": "dot", "size": 22, "title": "Industry: Auto Manufacturers"}, {"font": {"color": "white"}, "group": "Shareholding", "id": "BAJAJ-AUTO \u2013 Insider Holding", "label": "BAJAJ-AUTO \u2013 Insider Holding", "shape": "dot", "size": 16, "title": "Shareholding: BAJAJ-AUTO \u2013 Insider Holding | 60.0%"}, {"font": {"color": "white"}, "group": "Shareholding", "id": "BAJAJ-AUTO \u2013 Institutional Holding", "label": "BAJAJ-AUTO \u2013 Institutional Holding", "shape": "dot", "size": 16, "title": "Shareholding: BAJAJ-AUTO \u2013 Institutional Holding | 15.8%"}, {"font": {"color": "white"}, "group": "Company", "id": "BAJAJFINSV", "label": "BAJAJFINSV", "shape": "dot", "size": 42, "title": "Company: BAJAJFINSV | Bajaj Finserv Ltd."}, {"font": {"color": "white"}, "group": "Person", "id": "Mr. Sanjivnayan Rahulkumar Bajaj", "label": "Mr. Sanjivnayan Rahulkumar Bajaj", "shape": "dot", "size": 24, "title": "Person: Mr. Sanjivnayan Rahulkumar Bajaj"}, {"font": {"color": "white"}, "group": "Industry", "id": "Financial Conglomerates", "label": "Financial Conglomerates", "shape": "dot", "size": 22, "title": "Industry: Financial Conglomerates"}, {"font": {"color": "white"}, "group": "Shareholding", "id": "BAJAJFINSV \u2013 Insider Holding", "label": "BAJAJFINSV \u2013 Insider Holding", "shape": "dot", "size": 16, "title": "Shareholding: BAJAJFINSV \u2013 Insider Holding | 63.9%"}, {"font": {"color": "white"}, "group": "Shareholding", "id": "BAJAJFINSV \u2013 Institutional Holding", "label": "BAJAJFINSV \u2013 Institutional Holding", "shape": "dot", "size": 16, "title": "Shareholding: BAJAJFINSV \u2013 Institutional Holding | 14.6%"}, {"font": {"color": "white"}, "group": "Company", "id": "BAJFINANCE", "label": "BAJFINANCE", "shape": "dot", "size": 42, "title": "Company: BAJFINANCE | Bajaj Finance Limited"}, {"font": {"color": "white"}, "group": "Person", "id": "Mr. Rajeev A. Jain", "label": "Mr. Rajeev A. Jain", "shape": "dot", "size": 24, "title": "Person: Mr. Rajeev A. Jain"}, {"font": {"color": "white"}, "group": "Industry", "id": "Credit Services", "label": "Credit Services", "shape": "dot", "size": 22, "title": "Industry: Credit Services"}, {"font": {"color": "white"}, "group": "Shareholding", "id": "BAJFINANCE \u2013 Insider Holding", "label": "BAJFINANCE \u2013 Insider Holding", "shape": "dot", "size": 16, "title": "Shareholding: BAJFINANCE \u2013 Insider Holding | 56.3%"}, {"font": {"color": "white"}, "group": "Shareholding", "id": "BAJFINANCE \u2013 Institutional Holding", "label": "BAJFINANCE \u2013 Institutional Holding", "shape": "dot", "size": 16, "title": "Shareholding: BAJFINANCE \u2013 Institutional Holding | 24.7%"}, {"font": {"color": "white"}, "group": "Company", "id": "BEL", "label": "BEL", "shape": "dot", "size": 42, "title": "Company: BEL | Bharat Electronics Limited"}, {"font": {"color": "white"}, "group": "Person", "id": "Mr. Manoj  Jain", "label": "Mr. Manoj  Jain", "shape": "dot", "size": 24, "title": "Person: Mr. Manoj  Jain"}, {"font": {"color": "white"}, "group": "Industry", "id": "Aerospace \u0026 Defense", "label": "Aerospace \u0026 Defense", "shape": "dot", "size": 22, "title": "Industry: Aerospace \u0026 Defense"}, {"font": {"color": "white"}, "group": "Shareholding", "id": "BEL \u2013 Insider Holding", "label": "BEL \u2013 Insider Holding", "shape": "dot", "size": 16, "title": "Shareholding: BEL \u2013 Insider Holding | 53.2%"}, {"font": {"color": "white"}, "group": "Shareholding", "id": "BEL \u2013 Institutional Holding", "label": "BEL \u2013 Institutional Holding", "shape": "dot", "size": 16, "title": "Shareholding: BEL \u2013 Institutional Holding | 25.6%"}, {"font": {"color": "white"}, "group": "Company", "id": "BHARTIARTL", "label": "BHARTIARTL", "shape": "dot", "size": 42, "title": "Company: BHARTIARTL | Bharti Airtel Limited"}, {"font": {"color": "white"}, "group": "Person", "id": "Mr. Shashwat  Sharma", "label": "Mr. Shashwat  Sharma", "shape": "dot", "size": 24, "title": "Person: Mr. Shashwat  Sharma"}, {"font": {"color": "white"}, "group": "Sector", "id": "Communication Services", "label": "Communication Services", "shape": "dot", "size": 28, "title": "Sector: Communication Services"}, {"font": {"color": "white"}, "group": "Industry", "id": "Telecom Services", "label": "Telecom Services", "shape": "dot", "size": 22, "title": "Industry: Telecom Services"}, {"font": {"color": "white"}, "group": "Shareholding", "id": "BHARTIARTL \u2013 Insider Holding", "label": "BHARTIARTL \u2013 Insider Holding", "shape": "dot", "size": 16, "title": "Shareholding: BHARTIARTL \u2013 Insider Holding | 48.0%"}, {"font": {"color": "white"}, "group": "Shareholding", "id": "BHARTIARTL \u2013 Institutional Holding", "label": "BHARTIARTL \u2013 Institutional Holding", "shape": "dot", "size": 16, "title": "Shareholding: BHARTIARTL \u2013 Institutional Holding | 32.6%"}, {"font": {"color": "white"}, "group": "Company", "id": "CIPLA", "label": "CIPLA", "shape": "dot", "size": 42, "title": "Company: CIPLA | Cipla Limited"}, {"font": {"color": "white"}, "group": "Person", "id": "Mr. Achin  Gupta", "label": "Mr. Achin  Gupta", "shape": "dot", "size": 24, "title": "Person: Mr. Achin  Gupta"}, {"font": {"color": "white"}, "group": "Industry", "id": "Drug Manufacturers - Specialty \u0026 Generic", "label": "Drug Manufacturers - Specialty \u0026 Generic", "shape": "dot", "size": 22, "title": "Industry: Drug Manufacturers - Specialty \u0026 Generic"}, {"font": {"color": "white"}, "group": "Shareholding", "id": "CIPLA \u2013 Insider Holding", "label": "CIPLA \u2013 Insider Holding", "shape": "dot", "size": 16, "title": "Shareholding: CIPLA \u2013 Insider Holding | 31.0%"}, {"font": {"color": "white"}, "group": "Shareholding", "id": "CIPLA \u2013 Institutional Holding", "label": "CIPLA \u2013 Institutional Holding", "shape": "dot", "size": 16, "title": "Shareholding: CIPLA \u2013 Institutional Holding | 40.4%"}, {"font": {"color": "white"}, "group": "Company", "id": "COALINDIA", "label": "COALINDIA", "shape": "dot", "size": 42, "title": "Company: COALINDIA | Coal India Limited"}, {"font": {"color": "white"}, "group": "Person", "id": "Mr. B.  Sairam", "label": "Mr. B.  Sairam", "shape": "dot", "size": 24, "title": "Person: Mr. B.  Sairam"}, {"font": {"color": "white"}, "group": "Shareholding", "id": "COALINDIA \u2013 Insider Holding", "label": "COALINDIA \u2013 Insider Holding", "shape": "dot", "size": 16, "title": "Shareholding: COALINDIA \u2013 Insider Holding | 63.1%"}, {"font": {"color": "white"}, "group": "Shareholding", "id": "COALINDIA \u2013 Institutional Holding", "label": "COALINDIA \u2013 Institutional Holding", "shape": "dot", "size": 16, "title": "Shareholding: COALINDIA \u2013 Institutional Holding | 25.1%"}, {"font": {"color": "white"}, "group": "Company", "id": "DRREDDY", "label": "DRREDDY", "shape": "dot", "size": 42, "title": "Company: DRREDDY | Dr. Reddy\u0027s Laboratories Limited"}, {"font": {"color": "white"}, "group": "Person", "id": "Mr. Gunupati Venkateswara Prasad B.E.", "label": "Mr. Gunupati Venkateswara Prasad B.E.", "shape": "dot", "size": 24, "title": "Person: Mr. Gunupati Venkateswara Prasad B.E."}, {"font": {"color": "white"}, "group": "Shareholding", "id": "DRREDDY \u2013 Insider Holding", "label": "DRREDDY \u2013 Insider Holding", "shape": "dot", "size": 16, "title": "Shareholding: DRREDDY \u2013 Insider Holding | 29.5%"}, {"font": {"color": "white"}, "group": "Shareholding", "id": "DRREDDY \u2013 Institutional Holding", "label": "DRREDDY \u2013 Institutional Holding", "shape": "dot", "size": 16, "title": "Shareholding: DRREDDY \u2013 Institutional Holding | 51.4%"}, {"font": {"color": "white"}, "group": "Company", "id": "EICHERMOT", "label": "EICHERMOT", "shape": "dot", "size": 42, "title": "Company: EICHERMOT | Eicher Motors Limited"}, {"font": {"color": "white"}, "group": "Person", "id": "Mr. Govindarajan  Balakrishnan", "label": "Mr. Govindarajan  Balakrishnan", "shape": "dot", "size": 24, "title": "Person: Mr. Govindarajan  Balakrishnan"}, {"font": {"color": "white"}, "group": "Shareholding", "id": "EICHERMOT \u2013 Insider Holding", "label": "EICHERMOT \u2013 Insider Holding", "shape": "dot", "size": 16, "title": "Shareholding: EICHERMOT \u2013 Insider Holding | 49.9%"}, {"font": {"color": "white"}, "group": "Shareholding", "id": "EICHERMOT \u2013 Institutional Holding", "label": "EICHERMOT \u2013 Institutional Holding", "shape": "dot", "size": 16, "title": "Shareholding: EICHERMOT \u2013 Institutional Holding | 27.3%"}, {"font": {"color": "white"}, "group": "Company", "id": "ETERNAL", "label": "ETERNAL", "shape": "dot", "size": 42, "title": "Company: ETERNAL | Eternal Limited"}, {"font": {"color": "white"}, "group": "Person", "id": "Mr. Albinder Singh Dhindsa", "label": "Mr. Albinder Singh Dhindsa", "shape": "dot", "size": 24, "title": "Person: Mr. Albinder Singh Dhindsa"}, {"font": {"color": "white"}, "group": "Industry", "id": "Internet Retail", "label": "Internet Retail", "shape": "dot", "size": 22, "title": "Industry: Internet Retail"}, {"font": {"color": "white"}, "group": "Shareholding", "id": "ETERNAL \u2013 Insider Holding", "label": "ETERNAL \u2013 Insider Holding", "shape": "dot", "size": 16, "title": "Shareholding: ETERNAL \u2013 Insider Holding | 27.2%"}, {"font": {"color": "white"}, "group": "Shareholding", "id": "ETERNAL \u2013 Institutional Holding", "label": "ETERNAL \u2013 Institutional Holding", "shape": "dot", "size": 16, "title": "Shareholding: ETERNAL \u2013 Institutional Holding | 51.5%"}, {"font": {"color": "white"}, "group": "Company", "id": "GRASIM", "label": "GRASIM", "shape": "dot", "size": 42, "title": "Company: GRASIM | Grasim Industries Limited"}, {"font": {"color": "white"}, "group": "Person", "id": "Mr. Himanshu  Kapania", "label": "Mr. Himanshu  Kapania", "shape": "dot", "size": 24, "title": "Person: Mr. Himanshu  Kapania"}, {"font": {"color": "white"}, "group": "Industry", "id": "Building Materials", "label": "Building Materials", "shape": "dot", "size": 22, "title": "Industry: Building Materials"}, {"font": {"color": "white"}, "group": "Shareholding", "id": "GRASIM \u2013 Insider Holding", "label": "GRASIM \u2013 Insider Holding", "shape": "dot", "size": 16, "title": "Shareholding: GRASIM \u2013 Insider Holding | 47.9%"}, {"font": {"color": "white"}, "group": "Shareholding", "id": "GRASIM \u2013 Institutional Holding", "label": "GRASIM \u2013 Institutional Holding", "shape": "dot", "size": 16, "title": "Shareholding: GRASIM \u2013 Institutional Holding | 25.3%"}, {"font": {"color": "white"}, "group": "Company", "id": "HCLTECH", "label": "HCLTECH", "shape": "dot", "size": 42, "title": "Company: HCLTECH | HCL Technologies Limited"}, {"font": {"color": "white"}, "group": "Person", "id": "Mr. ChinnaSwamy  VijayaKumar", "label": "Mr. ChinnaSwamy  VijayaKumar", "shape": "dot", "size": 24, "title": "Person: Mr. ChinnaSwamy  VijayaKumar"}, {"font": {"color": "white"}, "group": "Sector", "id": "Technology", "label": "Technology", "shape": "dot", "size": 28, "title": "Sector: Technology"}, {"font": {"color": "white"}, "group": "Industry", "id": "Information Technology Services", "label": "Information Technology Services", "shape": "dot", "size": 22, "title": "Industry: Information Technology Services"}, {"font": {"color": "white"}, "group": "Shareholding", "id": "HCLTECH \u2013 Insider Holding", "label": "HCLTECH \u2013 Insider Holding", "shape": "dot", "size": 16, "title": "Shareholding: HCLTECH \u2013 Insider Holding | 62.7%"}, {"font": {"color": "white"}, "group": "Shareholding", "id": "HCLTECH \u2013 Institutional Holding", "label": "HCLTECH \u2013 Institutional Holding", "shape": "dot", "size": 16, "title": "Shareholding: HCLTECH \u2013 Institutional Holding | 27.6%"}, {"font": {"color": "white"}, "group": "Company", "id": "HDFCBANK", "label": "HDFCBANK", "shape": "dot", "size": 42, "title": "Company: HDFCBANK | HDFC Bank Limited"}, {"font": {"color": "white"}, "group": "Person", "id": "Mr. Sashidhar  Jagdishan", "label": "Mr. Sashidhar  Jagdishan", "shape": "dot", "size": 24, "title": "Person: Mr. Sashidhar  Jagdishan"}, {"font": {"color": "white"}, "group": "Shareholding", "id": "HDFCBANK \u2013 Insider Holding", "label": "HDFCBANK \u2013 Insider Holding", "shape": "dot", "size": 16, "title": "Shareholding: HDFCBANK \u2013 Insider Holding | 0.2%"}, {"font": {"color": "white"}, "group": "Shareholding", "id": "HDFCBANK \u2013 Institutional Holding", "label": "HDFCBANK \u2013 Institutional Holding", "shape": "dot", "size": 16, "title": "Shareholding: HDFCBANK \u2013 Institutional Holding | 57.3%"}, {"font": {"color": "white"}, "group": "Company", "id": "HDFCLIFE", "label": "HDFCLIFE", "shape": "dot", "size": 42, "title": "Company: HDFCLIFE | HDFC Life Insurance Company Limited"}, {"font": {"color": "white"}, "group": "Person", "id": "Ms. Vibha U. Padalkar", "label": "Ms. Vibha U. Padalkar", "shape": "dot", "size": 24, "title": "Person: Ms. Vibha U. Padalkar"}, {"font": {"color": "white"}, "group": "Industry", "id": "Insurance - Life", "label": "Insurance - Life", "shape": "dot", "size": 22, "title": "Industry: Insurance - Life"}, {"font": {"color": "white"}, "group": "Shareholding", "id": "HDFCLIFE \u2013 Insider Holding", "label": "HDFCLIFE \u2013 Insider Holding", "shape": "dot", "size": 16, "title": "Shareholding: HDFCLIFE \u2013 Insider Holding | 56.0%"}, {"font": {"color": "white"}, "group": "Shareholding", "id": "HDFCLIFE \u2013 Institutional Holding", "label": "HDFCLIFE \u2013 Institutional Holding", "shape": "dot", "size": 16, "title": "Shareholding: HDFCLIFE \u2013 Institutional Holding | 27.1%"}, {"font": {"color": "white"}, "group": "Company", "id": "HINDALCO", "label": "HINDALCO", "shape": "dot", "size": 42, "title": "Company: HINDALCO | Hindalco Industries Limited"}, {"font": {"color": "white"}, "group": "Person", "id": "Mr. Satish  Pai", "label": "Mr. Satish  Pai", "shape": "dot", "size": 24, "title": "Person: Mr. Satish  Pai"}, {"font": {"color": "white"}, "group": "Industry", "id": "Aluminum", "label": "Aluminum", "shape": "dot", "size": 22, "title": "Industry: Aluminum"}, {"font": {"color": "white"}, "group": "Shareholding", "id": "HINDALCO \u2013 Insider Holding", "label": "HINDALCO \u2013 Insider Holding", "shape": "dot", "size": 16, "title": "Shareholding: HINDALCO \u2013 Insider Holding | 36.4%"}, {"font": {"color": "white"}, "group": "Shareholding", "id": "HINDALCO \u2013 Institutional Holding", "label": "HINDALCO \u2013 Institutional Holding", "shape": "dot", "size": 16, "title": "Shareholding: HINDALCO \u2013 Institutional Holding | 36.1%"}, {"font": {"color": "white"}, "group": "Company", "id": "HINDUNILVR", "label": "HINDUNILVR", "shape": "dot", "size": 42, "title": "Company: HINDUNILVR | Hindustan Unilever Limited"}, {"font": {"color": "white"}, "group": "Person", "id": "Ms. Priya  Nair", "label": "Ms. Priya  Nair", "shape": "dot", "size": 24, "title": "Person: Ms. Priya  Nair"}, {"font": {"color": "white"}, "group": "Sector", "id": "Consumer Defensive", "label": "Consumer Defensive", "shape": "dot", "size": 28, "title": "Sector: Consumer Defensive"}, {"font": {"color": "white"}, "group": "Industry", "id": "Household \u0026 Personal Products", "label": "Household \u0026 Personal Products", "shape": "dot", "size": 22, "title": "Industry: Household \u0026 Personal Products"}, {"font": {"color": "white"}, "group": "Shareholding", "id": "HINDUNILVR \u2013 Insider Holding", "label": "HINDUNILVR \u2013 Insider Holding", "shape": "dot", "size": 16, "title": "Shareholding: HINDUNILVR \u2013 Insider Holding | 62.3%"}, {"font": {"color": "white"}, "group": "Shareholding", "id": "HINDUNILVR \u2013 Institutional Holding", "label": "HINDUNILVR \u2013 Institutional Holding", "shape": "dot", "size": 16, "title": "Shareholding: HINDUNILVR \u2013 Institutional Holding | 19.6%"}, {"font": {"color": "white"}, "group": "Company", "id": "ICICIBANK", "label": "ICICIBANK", "shape": "dot", "size": 42, "title": "Company: ICICIBANK | ICICI Bank Limited"}, {"font": {"color": "white"}, "group": "Person", "id": "Mr. Sandeep  Bakhshi B.E.", "label": "Mr. Sandeep  Bakhshi B.E.", "shape": "dot", "size": 24, "title": "Person: Mr. Sandeep  Bakhshi B.E."}, {"font": {"color": "white"}, "group": "Shareholding", "id": "ICICIBANK \u2013 Insider Holding", "label": "ICICIBANK \u2013 Insider Holding", "shape": "dot", "size": 16, "title": "Shareholding: ICICIBANK \u2013 Insider Holding | 3.0%"}, {"font": {"color": "white"}, "group": "Shareholding", "id": "ICICIBANK \u2013 Institutional Holding", "label": "ICICIBANK \u2013 Institutional Holding", "shape": "dot", "size": 16, "title": "Shareholding: ICICIBANK \u2013 Institutional Holding | 56.5%"}, {"font": {"color": "white"}, "group": "Company", "id": "INDIGO", "label": "INDIGO", "shape": "dot", "size": 42, "title": "Company: INDIGO | InterGlobe Aviation Limited"}, {"font": {"color": "white"}, "group": "Person", "id": "Mr. Rahul  Bhatia", "label": "Mr. Rahul  Bhatia", "shape": "dot", "size": 24, "title": "Person: Mr. Rahul  Bhatia"}, {"font": {"color": "white"}, "group": "Industry", "id": "Airlines", "label": "Airlines", "shape": "dot", "size": 22, "title": "Industry: Airlines"}, {"font": {"color": "white"}, "group": "Shareholding", "id": "INDIGO \u2013 Insider Holding", "label": "INDIGO \u2013 Insider Holding", "shape": "dot", "size": 16, "title": "Shareholding: INDIGO \u2013 Insider Holding | 41.6%"}, {"font": {"color": "white"}, "group": "Shareholding", "id": "INDIGO \u2013 Institutional Holding", "label": "INDIGO \u2013 Institutional Holding", "shape": "dot", "size": 16, "title": "Shareholding: INDIGO \u2013 Institutional Holding | 44.3%"}, {"font": {"color": "white"}, "group": "Company", "id": "INFY", "label": "INFY", "shape": "dot", "size": 42, "title": "Company: INFY | Infosys Limited"}, {"font": {"color": "white"}, "group": "Person", "id": "Mr. Salil Satish Parekh", "label": "Mr. Salil Satish Parekh", "shape": "dot", "size": 24, "title": "Person: Mr. Salil Satish Parekh"}, {"font": {"color": "white"}, "group": "Shareholding", "id": "INFY \u2013 Insider Holding", "label": "INFY \u2013 Insider Holding", "shape": "dot", "size": 16, "title": "Shareholding: INFY \u2013 Insider Holding | 16.1%"}, {"font": {"color": "white"}, "group": "Shareholding", "id": "INFY \u2013 Institutional Holding", "label": "INFY \u2013 Institutional Holding", "shape": "dot", "size": 16, "title": "Shareholding: INFY \u2013 Institutional Holding | 48.7%"}, {"font": {"color": "white"}, "group": "Company", "id": "ITC", "label": "ITC", "shape": "dot", "size": 42, "title": "Company: ITC | ITC Limited"}, {"font": {"color": "white"}, "group": "Person", "id": "Mr. Sanjiv  Puri", "label": "Mr. Sanjiv  Puri", "shape": "dot", "size": 24, "title": "Person: Mr. Sanjiv  Puri"}, {"font": {"color": "white"}, "group": "Industry", "id": "Tobacco", "label": "Tobacco", "shape": "dot", "size": 22, "title": "Industry: Tobacco"}, {"font": {"color": "white"}, "group": "Shareholding", "id": "ITC \u2013 Insider Holding", "label": "ITC \u2013 Insider Holding", "shape": "dot", "size": 16, "title": "Shareholding: ITC \u2013 Insider Holding | 27.5%"}, {"font": {"color": "white"}, "group": "Shareholding", "id": "ITC \u2013 Institutional Holding", "label": "ITC \u2013 Institutional Holding", "shape": "dot", "size": 16, "title": "Shareholding: ITC \u2013 Institutional Holding | 51.4%"}, {"font": {"color": "white"}, "group": "Company", "id": "JIOFIN", "label": "JIOFIN", "shape": "dot", "size": 42, "title": "Company: JIOFIN | Jio Financial Services Limited"}, {"font": {"color": "white"}, "group": "Person", "id": "Mr. Hitesh Kumar Sethia", "label": "Mr. Hitesh Kumar Sethia", "shape": "dot", "size": 24, "title": "Person: Mr. Hitesh Kumar Sethia"}, {"font": {"color": "white"}, "group": "Industry", "id": "Asset Management", "label": "Asset Management", "shape": "dot", "size": 22, "title": "Industry: Asset Management"}, {"font": {"color": "white"}, "group": "Shareholding", "id": "JIOFIN \u2013 Insider Holding", "label": "JIOFIN \u2013 Insider Holding", "shape": "dot", "size": 16, "title": "Shareholding: JIOFIN \u2013 Insider Holding | 46.4%"}, {"font": {"color": "white"}, "group": "Shareholding", "id": "JIOFIN \u2013 Institutional Holding", "label": "JIOFIN \u2013 Institutional Holding", "shape": "dot", "size": 16, "title": "Shareholding: JIOFIN \u2013 Institutional Holding | 20.9%"}, {"font": {"color": "white"}, "group": "Company", "id": "JSWSTEEL", "label": "JSWSTEEL", "shape": "dot", "size": 42, "title": "Company: JSWSTEEL | JSW Steel Limited"}, {"font": {"color": "white"}, "group": "Person", "id": "Mr. Sajjan Kumar Jindal B.E.", "label": "Mr. Sajjan Kumar Jindal B.E.", "shape": "dot", "size": 24, "title": "Person: Mr. Sajjan Kumar Jindal B.E."}, {"font": {"color": "white"}, "group": "Industry", "id": "Steel", "label": "Steel", "shape": "dot", "size": 22, "title": "Industry: Steel"}, {"font": {"color": "white"}, "group": "Shareholding", "id": "JSWSTEEL \u2013 Insider Holding", "label": "JSWSTEEL \u2013 Insider Holding", "shape": "dot", "size": 16, "title": "Shareholding: JSWSTEEL \u2013 Insider Holding | 64.7%"}, {"font": {"color": "white"}, "group": "Shareholding", "id": "JSWSTEEL \u2013 Institutional Holding", "label": "JSWSTEEL \u2013 Institutional Holding", "shape": "dot", "size": 16, "title": "Shareholding: JSWSTEEL \u2013 Institutional Holding | 16.7%"}, {"font": {"color": "white"}, "group": "Company", "id": "KOTAKBANK", "label": "KOTAKBANK", "shape": "dot", "size": 42, "title": "Company: KOTAKBANK | Kotak Mahindra Bank Limited"}, {"font": {"color": "white"}, "group": "Person", "id": "Mr. Ashok Valiram Vaswani", "label": "Mr. Ashok Valiram Vaswani", "shape": "dot", "size": 24, "title": "Person: Mr. Ashok Valiram Vaswani"}, {"font": {"color": "white"}, "group": "Shareholding", "id": "KOTAKBANK \u2013 Insider Holding", "label": "KOTAKBANK \u2013 Insider Holding", "shape": "dot", "size": 16, "title": "Shareholding: KOTAKBANK \u2013 Insider Holding | 28.8%"}, {"font": {"color": "white"}, "group": "Shareholding", "id": "KOTAKBANK \u2013 Institutional Holding", "label": "KOTAKBANK \u2013 Institutional Holding", "shape": "dot", "size": 16, "title": "Shareholding: KOTAKBANK \u2013 Institutional Holding | 46.5%"}, {"font": {"color": "white"}, "group": "Company", "id": "LT", "label": "LT", "shape": "dot", "size": 42, "title": "Company: LT | Larsen \u0026 Toubro Limited"}, {"font": {"color": "white"}, "group": "Person", "id": "Mr. Sekharipuram Narayanan Subrahmanyan", "label": "Mr. Sekharipuram Narayanan Subrahmanyan", "shape": "dot", "size": 24, "title": "Person: Mr. Sekharipuram Narayanan Subrahmanyan"}, {"font": {"color": "white"}, "group": "Industry", "id": "Engineering \u0026 Construction", "label": "Engineering \u0026 Construction", "shape": "dot", "size": 22, "title": "Industry: Engineering \u0026 Construction"}, {"font": {"color": "white"}, "group": "Shareholding", "id": "LT \u2013 Insider Holding", "label": "LT \u2013 Insider Holding", "shape": "dot", "size": 16, "title": "Shareholding: LT \u2013 Insider Holding | 17.2%"}, {"font": {"color": "white"}, "group": "Shareholding", "id": "LT \u2013 Institutional Holding", "label": "LT \u2013 Institutional Holding", "shape": "dot", "size": 16, "title": "Shareholding: LT \u2013 Institutional Holding | 49.4%"}, {"font": {"color": "white"}, "group": "Company", "id": "M\u0026M", "label": "M\u0026M", "shape": "dot", "size": 42, "title": "Company: M\u0026M | Mahindra \u0026 Mahindra Limited"}, {"font": {"color": "white"}, "group": "Person", "id": "Dr. Anish Dilip Shah Ph.D.", "label": "Dr. Anish Dilip Shah Ph.D.", "shape": "dot", "size": 24, "title": "Person: Dr. Anish Dilip Shah Ph.D."}, {"font": {"color": "white"}, "group": "Shareholding", "id": "M\u0026M \u2013 Insider Holding", "label": "M\u0026M \u2013 Insider Holding", "shape": "dot", "size": 16, "title": "Shareholding: M\u0026M \u2013 Insider Holding | 25.2%"}, {"font": {"color": "white"}, "group": "Shareholding", "id": "M\u0026M \u2013 Institutional Holding", "label": "M\u0026M \u2013 Institutional Holding", "shape": "dot", "size": 16, "title": "Shareholding: M\u0026M \u2013 Institutional Holding | 49.3%"}, {"font": {"color": "white"}, "group": "Company", "id": "MARUTI", "label": "MARUTI", "shape": "dot", "size": 42, "title": "Company: MARUTI | Maruti Suzuki India Limited"}, {"font": {"color": "white"}, "group": "Person", "id": "Mr. Hisashi  Takeuchi", "label": "Mr. Hisashi  Takeuchi", "shape": "dot", "size": 24, "title": "Person: Mr. Hisashi  Takeuchi"}, {"font": {"color": "white"}, "group": "Shareholding", "id": "MARUTI \u2013 Insider Holding", "label": "MARUTI \u2013 Insider Holding", "shape": "dot", "size": 16, "title": "Shareholding: MARUTI \u2013 Insider Holding | 59.7%"}, {"font": {"color": "white"}, "group": "Shareholding", "id": "MARUTI \u2013 Institutional Holding", "label": "MARUTI \u2013 Institutional Holding", "shape": "dot", "size": 16, "title": "Shareholding: MARUTI \u2013 Institutional Holding | 28.0%"}, {"font": {"color": "white"}, "group": "Company", "id": "MAXHEALTH", "label": "MAXHEALTH", "shape": "dot", "size": 42, "title": "Company: MAXHEALTH | Max Healthcare Institute Limited"}, {"font": {"color": "white"}, "group": "Person", "id": "Mr. Abhay  Soi", "label": "Mr. Abhay  Soi", "shape": "dot", "size": 24, "title": "Person: Mr. Abhay  Soi"}, {"font": {"color": "white"}, "group": "Shareholding", "id": "MAXHEALTH \u2013 Insider Holding", "label": "MAXHEALTH \u2013 Insider Holding", "shape": "dot", "size": 16, "title": "Shareholding: MAXHEALTH \u2013 Insider Holding | 26.5%"}, {"font": {"color": "white"}, "group": "Shareholding", "id": "MAXHEALTH \u2013 Institutional Holding", "label": "MAXHEALTH \u2013 Institutional Holding", "shape": "dot", "size": 16, "title": "Shareholding: MAXHEALTH \u2013 Institutional Holding | 51.1%"}, {"font": {"color": "white"}, "group": "Company", "id": "NESTLEIND", "label": "NESTLEIND", "shape": "dot", "size": 42, "title": "Company: NESTLEIND | Nestl\u00e9 India Limited"}, {"font": {"color": "white"}, "group": "Person", "id": "Mr. Manish  Tiwary", "label": "Mr. Manish  Tiwary", "shape": "dot", "size": 24, "title": "Person: Mr. Manish  Tiwary"}, {"font": {"color": "white"}, "group": "Industry", "id": "Packaged Foods", "label": "Packaged Foods", "shape": "dot", "size": 22, "title": "Industry: Packaged Foods"}, {"font": {"color": "white"}, "group": "Shareholding", "id": "NESTLEIND \u2013 Insider Holding", "label": "NESTLEIND \u2013 Insider Holding", "shape": "dot", "size": 16, "title": "Shareholding: NESTLEIND \u2013 Insider Holding | 62.9%"}, {"font": {"color": "white"}, "group": "Shareholding", "id": "NESTLEIND \u2013 Institutional Holding", "label": "NESTLEIND \u2013 Institutional Holding", "shape": "dot", "size": 16, "title": "Shareholding: NESTLEIND \u2013 Institutional Holding | 17.1%"}, {"font": {"color": "white"}, "group": "Company", "id": "NTPC", "label": "NTPC", "shape": "dot", "size": 42, "title": "Company: NTPC | NTPC Limited"}, {"font": {"color": "white"}, "group": "Person", "id": "Mr. Gurdeep  Singh", "label": "Mr. Gurdeep  Singh", "shape": "dot", "size": 24, "title": "Person: Mr. Gurdeep  Singh"}, {"font": {"color": "white"}, "group": "Sector", "id": "Utilities", "label": "Utilities", "shape": "dot", "size": 28, "title": "Sector: Utilities"}, {"font": {"color": "white"}, "group": "Industry", "id": "Utilities - Regulated Electric", "label": "Utilities - Regulated Electric", "shape": "dot", "size": 22, "title": "Industry: Utilities - Regulated Electric"}, {"font": {"color": "white"}, "group": "Shareholding", "id": "NTPC \u2013 Insider Holding", "label": "NTPC \u2013 Insider Holding", "shape": "dot", "size": 16, "title": "Shareholding: NTPC \u2013 Insider Holding | 53.3%"}, {"font": {"color": "white"}, "group": "Shareholding", "id": "NTPC \u2013 Institutional Holding", "label": "NTPC \u2013 Institutional Holding", "shape": "dot", "size": 16, "title": "Shareholding: NTPC \u2013 Institutional Holding | 38.7%"}, {"font": {"color": "white"}, "group": "Company", "id": "ONGC", "label": "ONGC", "shape": "dot", "size": 42, "title": "Company: ONGC | Oil and Natural Gas Corporation Limited"}, {"font": {"color": "white"}, "group": "Person", "id": "Mr. Arun Kumar Singh B.Sc., B.Sc. (Engg.)", "label": "Mr. Arun Kumar Singh B.Sc., B.Sc. (Engg.)", "shape": "dot", "size": 24, "title": "Person: Mr. Arun Kumar Singh B.Sc., B.Sc. (Engg.)"}, {"font": {"color": "white"}, "group": "Industry", "id": "Oil \u0026 Gas Integrated", "label": "Oil \u0026 Gas Integrated", "shape": "dot", "size": 22, "title": "Industry: Oil \u0026 Gas Integrated"}, {"font": {"color": "white"}, "group": "Shareholding", "id": "ONGC \u2013 Insider Holding", "label": "ONGC \u2013 Insider Holding", "shape": "dot", "size": 16, "title": "Shareholding: ONGC \u2013 Insider Holding | 69.2%"}, {"font": {"color": "white"}, "group": "Shareholding", "id": "ONGC \u2013 Institutional Holding", "label": "ONGC \u2013 Institutional Holding", "shape": "dot", "size": 16, "title": "Shareholding: ONGC \u2013 Institutional Holding | 22.8%"}, {"font": {"color": "white"}, "group": "Company", "id": "POWERGRID", "label": "POWERGRID", "shape": "dot", "size": 42, "title": "Company: POWERGRID | Power Grid Corporation of India Limited"}, {"font": {"color": "white"}, "group": "Person", "id": "Mr. Vamsi Rama Mohan Burra", "label": "Mr. Vamsi Rama Mohan Burra", "shape": "dot", "size": 24, "title": "Person: Mr. Vamsi Rama Mohan Burra"}, {"font": {"color": "white"}, "group": "Shareholding", "id": "POWERGRID \u2013 Insider Holding", "label": "POWERGRID \u2013 Insider Holding", "shape": "dot", "size": 16, "title": "Shareholding: POWERGRID \u2013 Insider Holding | 52.6%"}, {"font": {"color": "white"}, "group": "Shareholding", "id": "POWERGRID \u2013 Institutional Holding", "label": "POWERGRID \u2013 Institutional Holding", "shape": "dot", "size": 16, "title": "Shareholding: POWERGRID \u2013 Institutional Holding | 35.6%"}, {"font": {"color": "white"}, "group": "Company", "id": "RELIANCE", "label": "RELIANCE", "shape": "dot", "size": 42, "title": "Company: RELIANCE | Reliance Industries Limited"}, {"font": {"color": "white"}, "group": "Person", "id": "Mr. Mukesh Dhirubhai Ambani", "label": "Mr. Mukesh Dhirubhai Ambani", "shape": "dot", "size": 24, "title": "Person: Mr. Mukesh Dhirubhai Ambani"}, {"font": {"color": "white"}, "group": "Industry", "id": "Oil \u0026 Gas Refining \u0026 Marketing", "label": "Oil \u0026 Gas Refining \u0026 Marketing", "shape": "dot", "size": 22, "title": "Industry: Oil \u0026 Gas Refining \u0026 Marketing"}, {"font": {"color": "white"}, "group": "Shareholding", "id": "RELIANCE \u2013 Insider Holding", "label": "RELIANCE \u2013 Insider Holding", "shape": "dot", "size": 16, "title": "Shareholding: RELIANCE \u2013 Insider Holding | 51.0%"}, {"font": {"color": "white"}, "group": "Shareholding", "id": "RELIANCE \u2013 Institutional Holding", "label": "RELIANCE \u2013 Institutional Holding", "shape": "dot", "size": 16, "title": "Shareholding: RELIANCE \u2013 Institutional Holding | 28.0%"}, {"font": {"color": "white"}, "group": "Company", "id": "SBILIFE", "label": "SBILIFE", "shape": "dot", "size": 42, "title": "Company: SBILIFE | SBI Life Insurance Company Limited"}, {"font": {"color": "white"}, "group": "Person", "id": "Mr. Amit  Jhingran", "label": "Mr. Amit  Jhingran", "shape": "dot", "size": 24, "title": "Person: Mr. Amit  Jhingran"}, {"font": {"color": "white"}, "group": "Shareholding", "id": "SBILIFE \u2013 Insider Holding", "label": "SBILIFE \u2013 Insider Holding", "shape": "dot", "size": 16, "title": "Shareholding: SBILIFE \u2013 Insider Holding | 58.5%"}, {"font": {"color": "white"}, "group": "Shareholding", "id": "SBILIFE \u2013 Institutional Holding", "label": "SBILIFE \u2013 Institutional Holding", "shape": "dot", "size": 16, "title": "Shareholding: SBILIFE \u2013 Institutional Holding | 29.8%"}, {"font": {"color": "white"}, "group": "Company", "id": "SBIN", "label": "SBIN", "shape": "dot", "size": 42, "title": "Company: SBIN | State Bank of India"}, {"font": {"color": "white"}, "group": "Person", "id": "Mr. Rana Ashutosh Kumar Singh", "label": "Mr. Rana Ashutosh Kumar Singh", "shape": "dot", "size": 24, "title": "Person: Mr. Rana Ashutosh Kumar Singh"}, {"font": {"color": "white"}, "group": "Shareholding", "id": "SBIN \u2013 Insider Holding", "label": "SBIN \u2013 Insider Holding", "shape": "dot", "size": 16, "title": "Shareholding: SBIN \u2013 Insider Holding | 56.9%"}, {"font": {"color": "white"}, "group": "Shareholding", "id": "SBIN \u2013 Institutional Holding", "label": "SBIN \u2013 Institutional Holding", "shape": "dot", "size": 16, "title": "Shareholding: SBIN \u2013 Institutional Holding | 29.4%"}, {"font": {"color": "white"}, "group": "Company", "id": "SHRIRAMFIN", "label": "SHRIRAMFIN", "shape": "dot", "size": 42, "title": "Company: SHRIRAMFIN | Shriram Finance Limited"}, {"font": {"color": "white"}, "group": "Person", "id": "Mr. Parag  Sharma", "label": "Mr. Parag  Sharma", "shape": "dot", "size": 24, "title": "Person: Mr. Parag  Sharma"}, {"font": {"color": "white"}, "group": "Shareholding", "id": "SHRIRAMFIN \u2013 Insider Holding", "label": "SHRIRAMFIN \u2013 Insider Holding", "shape": "dot", "size": 16, "title": "Shareholding: SHRIRAMFIN \u2013 Insider Holding | 22.1%"}, {"font": {"color": "white"}, "group": "Shareholding", "id": "SHRIRAMFIN \u2013 Institutional Holding", "label": "SHRIRAMFIN \u2013 Institutional Holding", "shape": "dot", "size": 16, "title": "Shareholding: SHRIRAMFIN \u2013 Institutional Holding | 59.7%"}, {"font": {"color": "white"}, "group": "Company", "id": "SUNPHARMA", "label": "SUNPHARMA", "shape": "dot", "size": 42, "title": "Company: SUNPHARMA | Sun Pharmaceutical Industries Limited"}, {"font": {"color": "white"}, "group": "Person", "id": "Mr. Kirti Wardhaman Ganorkar", "label": "Mr. Kirti Wardhaman Ganorkar", "shape": "dot", "size": 24, "title": "Person: Mr. Kirti Wardhaman Ganorkar"}, {"font": {"color": "white"}, "group": "Shareholding", "id": "SUNPHARMA \u2013 Insider Holding", "label": "SUNPHARMA \u2013 Insider Holding", "shape": "dot", "size": 16, "title": "Shareholding: SUNPHARMA \u2013 Insider Holding | 55.6%"}, {"font": {"color": "white"}, "group": "Shareholding", "id": "SUNPHARMA \u2013 Institutional Holding", "label": "SUNPHARMA \u2013 Institutional Holding", "shape": "dot", "size": 16, "title": "Shareholding: SUNPHARMA \u2013 Institutional Holding | 28.6%"}, {"font": {"color": "white"}, "group": "Company", "id": "TATACONSUM", "label": "TATACONSUM", "shape": "dot", "size": 42, "title": "Company: TATACONSUM | Tata Consumer Products Limited"}, {"font": {"color": "white"}, "group": "Person", "id": "Mr. Sunil Alaric D\u0027Souza", "label": "Mr. Sunil Alaric D\u0027Souza", "shape": "dot", "size": 24, "title": "Person: Mr. Sunil Alaric D\u0027Souza"}, {"font": {"color": "white"}, "group": "Shareholding", "id": "TATACONSUM \u2013 Insider Holding", "label": "TATACONSUM \u2013 Insider Holding", "shape": "dot", "size": 16, "title": "Shareholding: TATACONSUM \u2013 Insider Holding | 34.4%"}, {"font": {"color": "white"}, "group": "Shareholding", "id": "TATACONSUM \u2013 Institutional Holding", "label": "TATACONSUM \u2013 Institutional Holding", "shape": "dot", "size": 16, "title": "Shareholding: TATACONSUM \u2013 Institutional Holding | 33.6%"}, {"font": {"color": "white"}, "group": "Company", "id": "TATASTEEL", "label": "TATASTEEL", "shape": "dot", "size": 42, "title": "Company: TATASTEEL | Tata Steel Limited"}, {"font": {"color": "white"}, "group": "Person", "id": "Mr. Thachat Viswanath Narendran", "label": "Mr. Thachat Viswanath Narendran", "shape": "dot", "size": 24, "title": "Person: Mr. Thachat Viswanath Narendran"}, {"font": {"color": "white"}, "group": "Shareholding", "id": "TATASTEEL \u2013 Insider Holding", "label": "TATASTEEL \u2013 Insider Holding", "shape": "dot", "size": 16, "title": "Shareholding: TATASTEEL \u2013 Insider Holding | 35.5%"}, {"font": {"color": "white"}, "group": "Shareholding", "id": "TATASTEEL \u2013 Institutional Holding", "label": "TATASTEEL \u2013 Institutional Holding", "shape": "dot", "size": 16, "title": "Shareholding: TATASTEEL \u2013 Institutional Holding | 33.8%"}, {"font": {"color": "white"}, "group": "Company", "id": "TCS", "label": "TCS", "shape": "dot", "size": 42, "title": "Company: TCS | Tata Consultancy Services Limited"}, {"font": {"color": "white"}, "group": "Person", "id": "Mr. K.  Krithivasan B.E, M.Tech.", "label": "Mr. K.  Krithivasan B.E, M.Tech.", "shape": "dot", "size": 24, "title": "Person: Mr. K.  Krithivasan B.E, M.Tech."}, {"font": {"color": "white"}, "group": "Shareholding", "id": "TCS \u2013 Insider Holding", "label": "TCS \u2013 Insider Holding", "shape": "dot", "size": 16, "title": "Shareholding: TCS \u2013 Insider Holding | 71.8%"}, {"font": {"color": "white"}, "group": "Shareholding", "id": "TCS \u2013 Institutional Holding", "label": "TCS \u2013 Institutional Holding", "shape": "dot", "size": 16, "title": "Shareholding: TCS \u2013 Institutional Holding | 17.0%"}, {"font": {"color": "white"}, "group": "Company", "id": "TECHM", "label": "TECHM", "shape": "dot", "size": 42, "title": "Company: TECHM | Tech Mahindra Limited"}, {"font": {"color": "white"}, "group": "Person", "id": "Mr. Mohit  Joshi", "label": "Mr. Mohit  Joshi", "shape": "dot", "size": 24, "title": "Person: Mr. Mohit  Joshi"}, {"font": {"color": "white"}, "group": "Shareholding", "id": "TECHM \u2013 Insider Holding", "label": "TECHM \u2013 Insider Holding", "shape": "dot", "size": 16, "title": "Shareholding: TECHM \u2013 Insider Holding | 36.6%"}, {"font": {"color": "white"}, "group": "Shareholding", "id": "TECHM \u2013 Institutional Holding", "label": "TECHM \u2013 Institutional Holding", "shape": "dot", "size": 16, "title": "Shareholding: TECHM \u2013 Institutional Holding | 43.9%"}, {"font": {"color": "white"}, "group": "Company", "id": "TITAN", "label": "TITAN", "shape": "dot", "size": 42, "title": "Company: TITAN | Titan Company Limited"}, {"font": {"color": "white"}, "group": "Person", "id": "Mr. Ajoy  Chawla B.E., PGDM", "label": "Mr. Ajoy  Chawla B.E., PGDM", "shape": "dot", "size": 24, "title": "Person: Mr. Ajoy  Chawla B.E., PGDM"}, {"font": {"color": "white"}, "group": "Industry", "id": "Luxury Goods", "label": "Luxury Goods", "shape": "dot", "size": 22, "title": "Industry: Luxury Goods"}, {"font": {"color": "white"}, "group": "Shareholding", "id": "TITAN \u2013 Insider Holding", "label": "TITAN \u2013 Insider Holding", "shape": "dot", "size": 16, "title": "Shareholding: TITAN \u2013 Insider Holding | 58.8%"}, {"font": {"color": "white"}, "group": "Shareholding", "id": "TITAN \u2013 Institutional Holding", "label": "TITAN \u2013 Institutional Holding", "shape": "dot", "size": 16, "title": "Shareholding: TITAN \u2013 Institutional Holding | 19.9%"}, {"font": {"color": "white"}, "group": "Company", "id": "TMPV", "label": "TMPV", "shape": "dot", "size": 42, "title": "Company: TMPV | Tata Motors Passenger Vehicles Limited"}, {"font": {"color": "white"}, "group": "Person", "id": "Mr. Shailesh  Chandra", "label": "Mr. Shailesh  Chandra", "shape": "dot", "size": 24, "title": "Person: Mr. Shailesh  Chandra"}, {"font": {"color": "white"}, "group": "Shareholding", "id": "TMPV \u2013 Insider Holding", "label": "TMPV \u2013 Insider Holding", "shape": "dot", "size": 16, "title": "Shareholding: TMPV \u2013 Insider Holding | 44.2%"}, {"font": {"color": "white"}, "group": "Shareholding", "id": "TMPV \u2013 Institutional Holding", "label": "TMPV \u2013 Institutional Holding", "shape": "dot", "size": 16, "title": "Shareholding: TMPV \u2013 Institutional Holding | 24.0%"}, {"font": {"color": "white"}, "group": "Company", "id": "TRENT", "label": "TRENT", "shape": "dot", "size": 42, "title": "Company: TRENT | Trent Limited"}, {"font": {"color": "white"}, "group": "Person", "id": "Mr. Venkatesalu  Palaniswamy", "label": "Mr. Venkatesalu  Palaniswamy", "shape": "dot", "size": 24, "title": "Person: Mr. Venkatesalu  Palaniswamy"}, {"font": {"color": "white"}, "group": "Industry", "id": "Apparel Retail", "label": "Apparel Retail", "shape": "dot", "size": 22, "title": "Industry: Apparel Retail"}, {"font": {"color": "white"}, "group": "Shareholding", "id": "TRENT \u2013 Insider Holding", "label": "TRENT \u2013 Insider Holding", "shape": "dot", "size": 16, "title": "Shareholding: TRENT \u2013 Insider Holding | 41.9%"}, {"font": {"color": "white"}, "group": "Shareholding", "id": "TRENT \u2013 Institutional Holding", "label": "TRENT \u2013 Institutional Holding", "shape": "dot", "size": 16, "title": "Shareholding: TRENT \u2013 Institutional Holding | 28.6%"}, {"font": {"color": "white"}, "group": "Company", "id": "ULTRACEMCO", "label": "ULTRACEMCO", "shape": "dot", "size": 42, "title": "Company: ULTRACEMCO | UltraTech Cement Limited"}, {"font": {"color": "white"}, "group": "Person", "id": "Mr. Kailash Chandra Jhanwar B.Com, C.S (Inter), FCA", "label": "Mr. Kailash Chandra Jhanwar B.Com, C.S (Inter), FCA", "shape": "dot", "size": 24, "title": "Person: Mr. Kailash Chandra Jhanwar B.Com, C.S (Inter), FCA"}, {"font": {"color": "white"}, "group": "Shareholding", "id": "ULTRACEMCO \u2013 Insider Holding", "label": "ULTRACEMCO \u2013 Insider Holding", "shape": "dot", "size": 16, "title": "Shareholding: ULTRACEMCO \u2013 Insider Holding | 60.6%"}, {"font": {"color": "white"}, "group": "Shareholding", "id": "ULTRACEMCO \u2013 Institutional Holding", "label": "ULTRACEMCO \u2013 Institutional Holding", "shape": "dot", "size": 16, "title": "Shareholding: ULTRACEMCO \u2013 Institutional Holding | 21.7%"}, {"font": {"color": "white"}, "group": "Company", "id": "WIPRO", "label": "WIPRO", "shape": "dot", "size": 42, "title": "Company: WIPRO | Wipro Limited"}, {"font": {"color": "white"}, "group": "Person", "id": "Mr. Srinivas  Pallia", "label": "Mr. Srinivas  Pallia", "shape": "dot", "size": 24, "title": "Person: Mr. Srinivas  Pallia"}, {"font": {"color": "white"}, "group": "Shareholding", "id": "WIPRO \u2013 Insider Holding", "label": "WIPRO \u2013 Insider Holding", "shape": "dot", "size": 16, "title": "Shareholding: WIPRO \u2013 Insider Holding | 72.8%"}, {"font": {"color": "white"}, "group": "Shareholding", "id": "WIPRO \u2013 Institutional Holding", "label": "WIPRO \u2013 Institutional Holding", "shape": "dot", "size": 16, "title": "Shareholding: WIPRO \u2013 Institutional Holding | 15.0%"}]);
+                  edges = new vis.DataSet([{"from": "ADANIENT", "label": "IN_SECTOR", "title": "IN_SECTOR", "to": "Energy"}, {"from": "ADANIENT", "label": "IN_INDUSTRY", "title": "IN_INDUSTRY", "to": "Thermal Coal"}, {"color": "#00D4FF", "dashes": false, "from": "ADANIENT", "label": "Total Revenue", "title": "VALUE_AT | Total Revenue: \u20b9248.20 Billion (2025-12-31)", "to": "Total Revenue", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "ADANIENT", "label": "Net Income", "title": "VALUE_AT | Net Income: \u20b956.27 Billion (2025-12-31)", "to": "Net Income", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "ADANIENT", "label": "Net Debt", "title": "VALUE_AT | Net Debt: \u20b9731.31 Billion (2025-03-31)", "to": "Net Debt", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "ADANIENT", "label": "Total Assets", "title": "VALUE_AT | Total Assets: \u20b91.98 Trillion (2025-03-31)", "to": "Total Assets", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "ADANIENT", "label": "Gross Profit", "title": "VALUE_AT | Gross Profit: \u20b9102.02 Billion (2025-12-31)", "to": "Gross Profit", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "ADANIENT", "label": "Operating Income", "title": "VALUE_AT | Operating Income: \u20b96.56 Billion (2025-12-31)", "to": "Operating Income", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "ADANIENT", "label": "EBITDA", "title": "VALUE_AT | EBITDA: \u20b930.58 Billion (2025-12-31)", "to": "EBITDA", "width": 1.5}, {"from": "ADANIENT", "label": "HELD_BY_INSIDERS", "title": "HELD_BY_INSIDERS", "to": "ADANIENT \u2013 Insider Holding"}, {"from": "ADANIENT", "label": "HELD_BY_INSTITUTIONS", "title": "HELD_BY_INSTITUTIONS", "to": "ADANIENT \u2013 Institutional Holding"}, {"from": "Mr. Rajeshbhai Shantilal Adani B.Com.", "label": "LEADS", "title": "LEADS", "to": "ADANIENT"}, {"color": "#333333", "dashes": true, "from": "Total Revenue", "title": "REPORTED_ON", "to": "2025-12-31", "width": 0.5}, {"color": "#333333", "dashes": true, "from": "Total Revenue", "title": "REPORTED_ON", "to": "2025-06-30", "width": 0.5}, {"color": "#333333", "dashes": true, "from": "Total Revenue", "title": "REPORTED_ON", "to": "2025-03-31", "width": 0.5}, {"color": "#333333", "dashes": true, "from": "Total Revenue", "title": "REPORTED_ON", "to": "2024-12-31", "width": 0.5}, {"color": "#333333", "dashes": true, "from": "Total Revenue", "title": "REPORTED_ON", "to": "2024-09-30", "width": 0.5}, {"color": "#333333", "dashes": true, "from": "Total Revenue", "title": "REPORTED_ON", "to": "2025-09-30", "width": 0.5}, {"color": "#333333", "dashes": true, "from": "Total Revenue", "title": "REPORTED_ON", "to": "2026-03-31", "width": 0.5}, {"color": "#333333", "dashes": true, "from": "Net Income", "title": "REPORTED_ON", "to": "2025-12-31", "width": 0.5}, {"color": "#333333", "dashes": true, "from": "Net Income", "title": "REPORTED_ON", "to": "2025-06-30", "width": 0.5}, {"color": "#333333", "dashes": true, "from": "Net Income", "title": "REPORTED_ON", "to": "2025-03-31", "width": 0.5}, {"color": "#333333", "dashes": true, "from": "Net Income", "title": "REPORTED_ON", "to": "2024-12-31", "width": 0.5}, {"color": "#333333", "dashes": true, "from": "Net Income", "title": "REPORTED_ON", "to": "2024-09-30", "width": 0.5}, {"color": "#333333", "dashes": true, "from": "Net Income", "title": "REPORTED_ON", "to": "2025-09-30", "width": 0.5}, {"color": "#333333", "dashes": true, "from": "Net Income", "title": "REPORTED_ON", "to": "2026-03-31", "width": 0.5}, {"color": "#333333", "dashes": true, "from": "Net Debt", "title": "REPORTED_ON", "to": "2025-03-31", "width": 0.5}, {"color": "#333333", "dashes": true, "from": "Net Debt", "title": "REPORTED_ON", "to": "2024-09-30", "width": 0.5}, {"color": "#333333", "dashes": true, "from": "Net Debt", "title": "REPORTED_ON", "to": "2025-09-30", "width": 0.5}, {"color": "#333333", "dashes": true, "from": "Net Debt", "title": "REPORTED_ON", "to": "2026-03-31", "width": 0.5}, {"color": "#333333", "dashes": true, "from": "Net Debt", "title": "REPORTED_ON", "to": "2025-12-31", "width": 0.5}, {"color": "#333333", "dashes": true, "from": "Net Debt", "title": "REPORTED_ON", "to": "2025-06-30", "width": 0.5}, {"color": "#333333", "dashes": true, "from": "Net Debt", "title": "REPORTED_ON", "to": "2024-12-31", "width": 0.5}, {"color": "#333333", "dashes": true, "from": "Total Assets", "title": "REPORTED_ON", "to": "2025-03-31", "width": 0.5}, {"color": "#333333", "dashes": true, "from": "Total Assets", "title": "REPORTED_ON", "to": "2024-09-30", "width": 0.5}, {"color": "#333333", "dashes": true, "from": "Total Assets", "title": "REPORTED_ON", "to": "2025-09-30", "width": 0.5}, {"color": "#333333", "dashes": true, "from": "Total Assets", "title": "REPORTED_ON", "to": "2026-03-31", "width": 0.5}, {"color": "#333333", "dashes": true, "from": "Total Assets", "title": "REPORTED_ON", "to": "2025-12-31", "width": 0.5}, {"color": "#333333", "dashes": true, "from": "Total Assets", "title": "REPORTED_ON", "to": "2025-06-30", "width": 0.5}, {"color": "#333333", "dashes": true, "from": "Total Assets", "title": "REPORTED_ON", "to": "2024-12-31", "width": 0.5}, {"color": "#333333", "dashes": true, "from": "Gross Profit", "title": "REPORTED_ON", "to": "2025-12-31", "width": 0.5}, {"color": "#333333", "dashes": true, "from": "Gross Profit", "title": "REPORTED_ON", "to": "2025-06-30", "width": 0.5}, {"color": "#333333", "dashes": true, "from": "Gross Profit", "title": "REPORTED_ON", "to": "2025-03-31", "width": 0.5}, {"color": "#333333", "dashes": true, "from": "Gross Profit", "title": "REPORTED_ON", "to": "2024-12-31", "width": 0.5}, {"color": "#333333", "dashes": true, "from": "Gross Profit", "title": "REPORTED_ON", "to": "2024-09-30", "width": 0.5}, {"color": "#333333", "dashes": true, "from": "Gross Profit", "title": "REPORTED_ON", "to": "2025-09-30", "width": 0.5}, {"color": "#333333", "dashes": true, "from": "Gross Profit", "title": "REPORTED_ON", "to": "2026-03-31", "width": 0.5}, {"color": "#333333", "dashes": true, "from": "Operating Income", "title": "REPORTED_ON", "to": "2025-12-31", "width": 0.5}, {"color": "#333333", "dashes": true, "from": "Operating Income", "title": "REPORTED_ON", "to": "2025-06-30", "width": 0.5}, {"color": "#333333", "dashes": true, "from": "Operating Income", "title": "REPORTED_ON", "to": "2025-03-31", "width": 0.5}, {"color": "#333333", "dashes": true, "from": "Operating Income", "title": "REPORTED_ON", "to": "2024-12-31", "width": 0.5}, {"color": "#333333", "dashes": true, "from": "Operating Income", "title": "REPORTED_ON", "to": "2024-09-30", "width": 0.5}, {"color": "#333333", "dashes": true, "from": "Operating Income", "title": "REPORTED_ON", "to": "2025-09-30", "width": 0.5}, {"color": "#333333", "dashes": true, "from": "Operating Income", "title": "REPORTED_ON", "to": "2026-03-31", "width": 0.5}, {"color": "#333333", "dashes": true, "from": "EBITDA", "title": "REPORTED_ON", "to": "2025-12-31", "width": 0.5}, {"color": "#333333", "dashes": true, "from": "EBITDA", "title": "REPORTED_ON", "to": "2025-06-30", "width": 0.5}, {"color": "#333333", "dashes": true, "from": "EBITDA", "title": "REPORTED_ON", "to": "2025-03-31", "width": 0.5}, {"color": "#333333", "dashes": true, "from": "EBITDA", "title": "REPORTED_ON", "to": "2024-12-31", "width": 0.5}, {"color": "#333333", "dashes": true, "from": "EBITDA", "title": "REPORTED_ON", "to": "2024-09-30", "width": 0.5}, {"color": "#333333", "dashes": true, "from": "EBITDA", "title": "REPORTED_ON", "to": "2025-09-30", "width": 0.5}, {"color": "#333333", "dashes": true, "from": "EBITDA", "title": "REPORTED_ON", "to": "2026-03-31", "width": 0.5}, {"from": "ADANIPORTS", "label": "IN_SECTOR", "title": "IN_SECTOR", "to": "Industrials"}, {"from": "ADANIPORTS", "label": "IN_INDUSTRY", "title": "IN_INDUSTRY", "to": "Marine Shipping"}, {"color": "#00D4FF", "dashes": false, "from": "ADANIPORTS", "label": "Total Revenue", "title": "VALUE_AT | Total Revenue: \u20b997.05 Billion (2025-12-31)", "to": "Total Revenue", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "ADANIPORTS", "label": "Net Income", "title": "VALUE_AT | Net Income: \u20b930.54 Billion (2025-12-31)", "to": "Net Income", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "ADANIPORTS", "label": "Net Debt", "title": "VALUE_AT | Net Debt: \u20b9422.54 Billion (2025-03-31)", "to": "Net Debt", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "ADANIPORTS", "label": "Total Assets", "title": "VALUE_AT | Total Assets: \u20b91.35 Trillion (2025-03-31)", "to": "Total Assets", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "ADANIPORTS", "label": "Gross Profit", "title": "VALUE_AT | Gross Profit: \u20b948.77 Billion (2025-12-31)", "to": "Gross Profit", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "ADANIPORTS", "label": "Operating Income", "title": "VALUE_AT | Operating Income: \u20b92.34 Billion (2025-12-31)", "to": "Operating Income", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "ADANIPORTS", "label": "EBITDA", "title": "VALUE_AT | EBITDA: \u20b948.18 Billion (2025-12-31)", "to": "EBITDA", "width": 1.5}, {"from": "ADANIPORTS", "label": "HELD_BY_INSIDERS", "title": "HELD_BY_INSIDERS", "to": "ADANIPORTS \u2013 Insider Holding"}, {"from": "ADANIPORTS", "label": "HELD_BY_INSTITUTIONS", "title": "HELD_BY_INSTITUTIONS", "to": "ADANIPORTS \u2013 Institutional Holding"}, {"from": "Mr. Ashwani  Gupta", "label": "LEADS", "title": "LEADS", "to": "ADANIPORTS"}, {"from": "APOLLOHOSP", "label": "IN_SECTOR", "title": "IN_SECTOR", "to": "Healthcare"}, {"from": "APOLLOHOSP", "label": "IN_INDUSTRY", "title": "IN_INDUSTRY", "to": "Medical Care Facilities"}, {"color": "#00D4FF", "dashes": false, "from": "APOLLOHOSP", "label": "Total Revenue", "title": "VALUE_AT | Total Revenue: \u20b964.77 Billion (2025-12-31)", "to": "Total Revenue", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "APOLLOHOSP", "label": "Net Income", "title": "VALUE_AT | Net Income: \u20b95.02 Billion (2025-12-31)", "to": "Net Income", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "APOLLOHOSP", "label": "Net Debt", "title": "VALUE_AT | Net Debt: \u20b922.52 Billion (2025-03-31)", "to": "Net Debt", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "APOLLOHOSP", "label": "Total Assets", "title": "VALUE_AT | Total Assets: \u20b9206.57 Billion (2025-03-31)", "to": "Total Assets", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "APOLLOHOSP", "label": "Gross Profit", "title": "VALUE_AT | Gross Profit: \u20b930.95 Billion (2025-12-31)", "to": "Gross Profit", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "APOLLOHOSP", "label": "Operating Income", "title": "VALUE_AT | Operating Income: \u20b952.80 Crore (2025-12-31)", "to": "Operating Income", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "APOLLOHOSP", "label": "EBITDA", "title": "VALUE_AT | EBITDA: \u20b910.33 Billion (2025-12-31)", "to": "EBITDA", "width": 1.5}, {"from": "APOLLOHOSP", "label": "HELD_BY_INSIDERS", "title": "HELD_BY_INSIDERS", "to": "APOLLOHOSP \u2013 Insider Holding"}, {"from": "APOLLOHOSP", "label": "HELD_BY_INSTITUTIONS", "title": "HELD_BY_INSTITUTIONS", "to": "APOLLOHOSP \u2013 Institutional Holding"}, {"from": "Dr. Suneeta  Reddy", "label": "LEADS", "title": "LEADS", "to": "APOLLOHOSP"}, {"from": "ASIANPAINT", "label": "IN_SECTOR", "title": "IN_SECTOR", "to": "Basic Materials"}, {"from": "ASIANPAINT", "label": "IN_INDUSTRY", "title": "IN_INDUSTRY", "to": "Specialty Chemicals"}, {"color": "#00D4FF", "dashes": false, "from": "ASIANPAINT", "label": "Total Revenue", "title": "VALUE_AT | Total Revenue: \u20b988.50 Billion (2025-12-31)", "to": "Total Revenue", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "ASIANPAINT", "label": "Net Income", "title": "VALUE_AT | Net Income: \u20b910.60 Billion (2025-12-31)", "to": "Net Income", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "ASIANPAINT", "label": "Net Debt", "title": "VALUE_AT | Net Debt: \u20b913.58 Billion (2025-09-30)", "to": "Net Debt", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "ASIANPAINT", "label": "Total Assets", "title": "VALUE_AT | Total Assets: \u20b9313.49 Billion (2025-09-30)", "to": "Total Assets", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "ASIANPAINT", "label": "Gross Profit", "title": "VALUE_AT | Gross Profit: \u20b939.21 Billion (2025-12-31)", "to": "Gross Profit", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "ASIANPAINT", "label": "Operating Income", "title": "VALUE_AT | Operating Income: \u20b91.61 Billion (2025-12-31)", "to": "Operating Income", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "ASIANPAINT", "label": "EBITDA", "title": "VALUE_AT | EBITDA: \u20b920.08 Billion (2025-12-31)", "to": "EBITDA", "width": 1.5}, {"from": "ASIANPAINT", "label": "HELD_BY_INSIDERS", "title": "HELD_BY_INSIDERS", "to": "ASIANPAINT \u2013 Insider Holding"}, {"from": "ASIANPAINT", "label": "HELD_BY_INSTITUTIONS", "title": "HELD_BY_INSTITUTIONS", "to": "ASIANPAINT \u2013 Institutional Holding"}, {"from": "Mr. Amit  Syngle", "label": "LEADS", "title": "LEADS", "to": "ASIANPAINT"}, {"from": "AXISBANK", "label": "IN_SECTOR", "title": "IN_SECTOR", "to": "Financial Services"}, {"from": "AXISBANK", "label": "IN_INDUSTRY", "title": "IN_INDUSTRY", "to": "Banks - Regional"}, {"color": "#00D4FF", "dashes": false, "from": "AXISBANK", "label": "Total Revenue", "title": "VALUE_AT | Total Revenue: \u20b9220.63 Billion (2026-03-31)", "to": "Total Revenue", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "AXISBANK", "label": "Net Income", "title": "VALUE_AT | Net Income: \u20b976.03 Billion (2026-03-31)", "to": "Net Income", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "AXISBANK", "label": "Net Debt", "title": "VALUE_AT | Net Debt: \u20b91.71 Trillion (2026-03-31)", "to": "Net Debt", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "AXISBANK", "label": "Total Assets", "title": "VALUE_AT | Total Assets: \u20b919.46 Trillion (2026-03-31)", "to": "Total Assets", "width": 1.5}, {"from": "AXISBANK", "label": "HELD_BY_INSIDERS", "title": "HELD_BY_INSIDERS", "to": "AXISBANK \u2013 Insider Holding"}, {"from": "AXISBANK", "label": "HELD_BY_INSTITUTIONS", "title": "HELD_BY_INSTITUTIONS", "to": "AXISBANK \u2013 Institutional Holding"}, {"from": "Mr. Amitabh  Chaudhry", "label": "LEADS", "title": "LEADS", "to": "AXISBANK"}, {"from": "BAJAJ-AUTO", "label": "IN_SECTOR", "title": "IN_SECTOR", "to": "Consumer Cyclical"}, {"from": "BAJAJ-AUTO", "label": "IN_INDUSTRY", "title": "IN_INDUSTRY", "to": "Auto Manufacturers"}, {"color": "#00D4FF", "dashes": false, "from": "BAJAJ-AUTO", "label": "Total Revenue", "title": "VALUE_AT | Total Revenue: \u20b9153.78 Billion (2025-12-31)", "to": "Total Revenue", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "BAJAJ-AUTO", "label": "Net Income", "title": "VALUE_AT | Net Income: \u20b927.50 Billion (2025-12-31)", "to": "Net Income", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "BAJAJ-AUTO", "label": "Net Debt", "title": "VALUE_AT | Net Debt: \u20b9177.60 Billion (2025-09-30)", "to": "Net Debt", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "BAJAJ-AUTO", "label": "Total Assets", "title": "VALUE_AT | Total Assets: \u20b9654.56 Billion (2025-09-30)", "to": "Total Assets", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "BAJAJ-AUTO", "label": "Gross Profit", "title": "VALUE_AT | Gross Profit: \u20b946.73 Billion (2025-12-31)", "to": "Gross Profit", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "BAJAJ-AUTO", "label": "Operating Income", "title": "VALUE_AT | Operating Income: \u20b94.36 Billion (2025-12-31)", "to": "Operating Income", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "BAJAJ-AUTO", "label": "EBITDA", "title": "VALUE_AT | EBITDA: \u20b941.66 Billion (2025-12-31)", "to": "EBITDA", "width": 1.5}, {"from": "BAJAJ-AUTO", "label": "HELD_BY_INSIDERS", "title": "HELD_BY_INSIDERS", "to": "BAJAJ-AUTO \u2013 Insider Holding"}, {"from": "BAJAJ-AUTO", "label": "HELD_BY_INSTITUTIONS", "title": "HELD_BY_INSTITUTIONS", "to": "BAJAJ-AUTO \u2013 Institutional Holding"}, {"from": "Mr. Rajivnayan Rahulkumar Bajaj", "label": "LEADS", "title": "LEADS", "to": "BAJAJ-AUTO"}, {"from": "BAJAJFINSV", "label": "IN_SECTOR", "title": "IN_SECTOR", "to": "Financial Services"}, {"from": "BAJAJFINSV", "label": "IN_INDUSTRY", "title": "IN_INDUSTRY", "to": "Financial Conglomerates"}, {"color": "#00D4FF", "dashes": false, "from": "BAJAJFINSV", "label": "Total Revenue", "title": "VALUE_AT | Total Revenue: \u20b9326.19 Billion (2025-12-31)", "to": "Total Revenue", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "BAJAJFINSV", "label": "Net Income", "title": "VALUE_AT | Net Income: \u20b922.29 Billion (2025-12-31)", "to": "Net Income", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "BAJAJFINSV", "label": "Net Debt", "title": "VALUE_AT | Net Debt: \u20b93.19 Trillion (2025-09-30)", "to": "Net Debt", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "BAJAJFINSV", "label": "Total Assets", "title": "VALUE_AT | Total Assets: \u20b97.08 Trillion (2025-09-30)", "to": "Total Assets", "width": 1.5}, {"from": "BAJAJFINSV", "label": "HELD_BY_INSIDERS", "title": "HELD_BY_INSIDERS", "to": "BAJAJFINSV \u2013 Insider Holding"}, {"from": "BAJAJFINSV", "label": "HELD_BY_INSTITUTIONS", "title": "HELD_BY_INSTITUTIONS", "to": "BAJAJFINSV \u2013 Institutional Holding"}, {"from": "Mr. Sanjivnayan Rahulkumar Bajaj", "label": "LEADS", "title": "LEADS", "to": "BAJAJFINSV"}, {"from": "BAJFINANCE", "label": "IN_SECTOR", "title": "IN_SECTOR", "to": "Financial Services"}, {"from": "BAJFINANCE", "label": "IN_INDUSTRY", "title": "IN_INDUSTRY", "to": "Credit Services"}, {"color": "#00D4FF", "dashes": false, "from": "BAJFINANCE", "label": "Total Revenue", "title": "VALUE_AT | Total Revenue: \u20b9131.63 Billion (2026-03-31)", "to": "Total Revenue", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "BAJFINANCE", "label": "Net Income", "title": "VALUE_AT | Net Income: \u20b954.65 Billion (2026-03-31)", "to": "Net Income", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "BAJFINANCE", "label": "Net Debt", "title": "VALUE_AT | Net Debt: \u20b93.51 Trillion (2026-03-31)", "to": "Net Debt", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "BAJFINANCE", "label": "Total Assets", "title": "VALUE_AT | Total Assets: \u20b95.60 Trillion (2026-03-31)", "to": "Total Assets", "width": 1.5}, {"from": "BAJFINANCE", "label": "HELD_BY_INSIDERS", "title": "HELD_BY_INSIDERS", "to": "BAJFINANCE \u2013 Insider Holding"}, {"from": "BAJFINANCE", "label": "HELD_BY_INSTITUTIONS", "title": "HELD_BY_INSTITUTIONS", "to": "BAJFINANCE \u2013 Institutional Holding"}, {"from": "Mr. Rajeev A. Jain", "label": "LEADS", "title": "LEADS", "to": "BAJFINANCE"}, {"from": "BEL", "label": "IN_SECTOR", "title": "IN_SECTOR", "to": "Industrials"}, {"from": "BEL", "label": "IN_INDUSTRY", "title": "IN_INDUSTRY", "to": "Aerospace \u0026 Defense"}, {"color": "#00D4FF", "dashes": false, "from": "BEL", "label": "Total Revenue", "title": "VALUE_AT | Total Revenue: \u20b971.54 Billion (2025-12-31)", "to": "Total Revenue", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "BEL", "label": "Net Income", "title": "VALUE_AT | Net Income: \u20b915.79 Billion (2025-12-31)", "to": "Net Income", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "BEL", "label": "Total Assets", "title": "VALUE_AT | Total Assets: \u20b9408.32 Billion (2025-03-31)", "to": "Total Assets", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "BEL", "label": "Gross Profit", "title": "VALUE_AT | Gross Profit: \u20b933.29 Billion (2025-12-31)", "to": "Gross Profit", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "BEL", "label": "Operating Income", "title": "VALUE_AT | Operating Income: \u20b91.39 Billion (2025-12-31)", "to": "Operating Income", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "BEL", "label": "EBITDA", "title": "VALUE_AT | EBITDA: \u20b922.66 Billion (2025-12-31)", "to": "EBITDA", "width": 1.5}, {"from": "BEL", "label": "HELD_BY_INSIDERS", "title": "HELD_BY_INSIDERS", "to": "BEL \u2013 Insider Holding"}, {"from": "BEL", "label": "HELD_BY_INSTITUTIONS", "title": "HELD_BY_INSTITUTIONS", "to": "BEL \u2013 Institutional Holding"}, {"from": "Mr. Manoj  Jain", "label": "LEADS", "title": "LEADS", "to": "BEL"}, {"from": "BHARTIARTL", "label": "IN_SECTOR", "title": "IN_SECTOR", "to": "Communication Services"}, {"from": "BHARTIARTL", "label": "IN_INDUSTRY", "title": "IN_INDUSTRY", "to": "Telecom Services"}, {"color": "#00D4FF", "dashes": false, "from": "BHARTIARTL", "label": "Total Revenue", "title": "VALUE_AT | Total Revenue: \u20b9539.82 Billion (2025-12-31)", "to": "Total Revenue", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "BHARTIARTL", "label": "Net Income", "title": "VALUE_AT | Net Income: \u20b966.31 Billion (2025-12-31)", "to": "Net Income", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "BHARTIARTL", "label": "Net Debt", "title": "VALUE_AT | Net Debt: \u20b91.98 Trillion (2025-06-30)", "to": "Net Debt", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "BHARTIARTL", "label": "Total Assets", "title": "VALUE_AT | Total Assets: \u20b95.15 Trillion (2025-06-30)", "to": "Total Assets", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "BHARTIARTL", "label": "Gross Profit", "title": "VALUE_AT | Gross Profit: \u20b9387.88 Billion (2025-12-31)", "to": "Gross Profit", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "BHARTIARTL", "label": "Operating Income", "title": "VALUE_AT | Operating Income: \u20b97.02 Billion (2025-12-31)", "to": "Operating Income", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "BHARTIARTL", "label": "EBITDA", "title": "VALUE_AT | EBITDA: \u20b9316.01 Billion (2025-12-31)", "to": "EBITDA", "width": 1.5}, {"from": "BHARTIARTL", "label": "HELD_BY_INSIDERS", "title": "HELD_BY_INSIDERS", "to": "BHARTIARTL \u2013 Insider Holding"}, {"from": "BHARTIARTL", "label": "HELD_BY_INSTITUTIONS", "title": "HELD_BY_INSTITUTIONS", "to": "BHARTIARTL \u2013 Institutional Holding"}, {"from": "Mr. Shashwat  Sharma", "label": "LEADS", "title": "LEADS", "to": "BHARTIARTL"}, {"from": "CIPLA", "label": "IN_SECTOR", "title": "IN_SECTOR", "to": "Healthcare"}, {"from": "CIPLA", "label": "IN_INDUSTRY", "title": "IN_INDUSTRY", "to": "Drug Manufacturers - Specialty \u0026 Generic"}, {"color": "#00D4FF", "dashes": false, "from": "CIPLA", "label": "Total Revenue", "title": "VALUE_AT | Total Revenue: \u20b969.63 Billion (2025-12-31)", "to": "Total Revenue", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "CIPLA", "label": "Net Income", "title": "VALUE_AT | Net Income: \u20b96.76 Billion (2025-12-31)", "to": "Net Income", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "CIPLA", "label": "Total Assets", "title": "VALUE_AT | Total Assets: \u20b9373.87 Billion (2025-03-31)", "to": "Total Assets", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "CIPLA", "label": "Gross Profit", "title": "VALUE_AT | Gross Profit: \u20b943.31 Billion (2025-12-31)", "to": "Gross Profit", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "CIPLA", "label": "Operating Income", "title": "VALUE_AT | Operating Income: \u20b92.06 Billion (2025-12-31)", "to": "Operating Income", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "CIPLA", "label": "EBITDA", "title": "VALUE_AT | EBITDA: \u20b914.61 Billion (2025-12-31)", "to": "EBITDA", "width": 1.5}, {"from": "CIPLA", "label": "HELD_BY_INSIDERS", "title": "HELD_BY_INSIDERS", "to": "CIPLA \u2013 Insider Holding"}, {"from": "CIPLA", "label": "HELD_BY_INSTITUTIONS", "title": "HELD_BY_INSTITUTIONS", "to": "CIPLA \u2013 Institutional Holding"}, {"from": "Mr. Achin  Gupta", "label": "LEADS", "title": "LEADS", "to": "CIPLA"}, {"from": "COALINDIA", "label": "IN_SECTOR", "title": "IN_SECTOR", "to": "Energy"}, {"from": "COALINDIA", "label": "IN_INDUSTRY", "title": "IN_INDUSTRY", "to": "Thermal Coal"}, {"color": "#00D4FF", "dashes": false, "from": "COALINDIA", "label": "Total Revenue", "title": "VALUE_AT | Total Revenue: \u20b9464.90 Billion (2026-03-31)", "to": "Total Revenue", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "COALINDIA", "label": "Net Income", "title": "VALUE_AT | Net Income: \u20b9108.39 Billion (2026-03-31)", "to": "Net Income", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "COALINDIA", "label": "Net Debt", "title": "VALUE_AT | Net Debt: \u20b952.02 Billion (2026-03-31)", "to": "Net Debt", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "COALINDIA", "label": "Total Assets", "title": "VALUE_AT | Total Assets: \u20b92.86 Trillion (2026-03-31)", "to": "Total Assets", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "COALINDIA", "label": "Gross Profit", "title": "VALUE_AT | Gross Profit: \u20b9436.24 Billion (2026-03-31)", "to": "Gross Profit", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "COALINDIA", "label": "Operating Income", "title": "VALUE_AT | Operating Income: \u20b951.28 Billion (2026-03-31)", "to": "Operating Income", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "COALINDIA", "label": "EBITDA", "title": "VALUE_AT | EBITDA: \u20b9149.70 Billion (2026-03-31)", "to": "EBITDA", "width": 1.5}, {"from": "COALINDIA", "label": "HELD_BY_INSIDERS", "title": "HELD_BY_INSIDERS", "to": "COALINDIA \u2013 Insider Holding"}, {"from": "COALINDIA", "label": "HELD_BY_INSTITUTIONS", "title": "HELD_BY_INSTITUTIONS", "to": "COALINDIA \u2013 Institutional Holding"}, {"from": "Mr. B.  Sairam", "label": "LEADS", "title": "LEADS", "to": "COALINDIA"}, {"from": "DRREDDY", "label": "IN_SECTOR", "title": "IN_SECTOR", "to": "Healthcare"}, {"from": "DRREDDY", "label": "IN_INDUSTRY", "title": "IN_INDUSTRY", "to": "Drug Manufacturers - Specialty \u0026 Generic"}, {"color": "#00D4FF", "dashes": false, "from": "DRREDDY", "label": "Total Revenue", "title": "VALUE_AT | Total Revenue: \u20b987.27 Billion (2025-12-31)", "to": "Total Revenue", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "DRREDDY", "label": "Net Income", "title": "VALUE_AT | Net Income: \u20b912.10 Billion (2025-12-31)", "to": "Net Income", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "DRREDDY", "label": "Net Debt", "title": "VALUE_AT | Net Debt: \u20b935.43 Billion (2025-12-31)", "to": "Net Debt", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "DRREDDY", "label": "Total Assets", "title": "VALUE_AT | Total Assets: \u20b9562.90 Billion (2025-12-31)", "to": "Total Assets", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "DRREDDY", "label": "Gross Profit", "title": "VALUE_AT | Gross Profit: \u20b946.81 Billion (2025-12-31)", "to": "Gross Profit", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "DRREDDY", "label": "Operating Income", "title": "VALUE_AT | Operating Income: \u20b914.24 Billion (2025-12-31)", "to": "Operating Income", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "DRREDDY", "label": "EBITDA", "title": "VALUE_AT | EBITDA: \u20b920.36 Billion (2025-12-31)", "to": "EBITDA", "width": 1.5}, {"from": "DRREDDY", "label": "HELD_BY_INSIDERS", "title": "HELD_BY_INSIDERS", "to": "DRREDDY \u2013 Insider Holding"}, {"from": "DRREDDY", "label": "HELD_BY_INSTITUTIONS", "title": "HELD_BY_INSTITUTIONS", "to": "DRREDDY \u2013 Institutional Holding"}, {"from": "Mr. Gunupati Venkateswara Prasad B.E.", "label": "LEADS", "title": "LEADS", "to": "DRREDDY"}, {"from": "EICHERMOT", "label": "IN_SECTOR", "title": "IN_SECTOR", "to": "Consumer Cyclical"}, {"from": "EICHERMOT", "label": "IN_INDUSTRY", "title": "IN_INDUSTRY", "to": "Auto Manufacturers"}, {"color": "#00D4FF", "dashes": false, "from": "EICHERMOT", "label": "Total Revenue", "title": "VALUE_AT | Total Revenue: \u20b960.00 Billion (2025-12-31)", "to": "Total Revenue", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "EICHERMOT", "label": "Net Income", "title": "VALUE_AT | Net Income: \u20b914.21 Billion (2025-12-31)", "to": "Net Income", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "EICHERMOT", "label": "Net Debt", "title": "VALUE_AT | Net Debt: \u20b947.30 Crore (2025-09-30)", "to": "Net Debt", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "EICHERMOT", "label": "Total Assets", "title": "VALUE_AT | Total Assets: \u20b9289.44 Billion (2025-09-30)", "to": "Total Assets", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "EICHERMOT", "label": "Gross Profit", "title": "VALUE_AT | Gross Profit: \u20b926.02 Billion (2025-12-31)", "to": "Gross Profit", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "EICHERMOT", "label": "Operating Income", "title": "VALUE_AT | Operating Income: \u20b93.37 Billion (2025-12-31)", "to": "Operating Income", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "EICHERMOT", "label": "EBITDA", "title": "VALUE_AT | EBITDA: \u20b920.77 Billion (2025-12-31)", "to": "EBITDA", "width": 1.5}, {"from": "EICHERMOT", "label": "HELD_BY_INSIDERS", "title": "HELD_BY_INSIDERS", "to": "EICHERMOT \u2013 Insider Holding"}, {"from": "EICHERMOT", "label": "HELD_BY_INSTITUTIONS", "title": "HELD_BY_INSTITUTIONS", "to": "EICHERMOT \u2013 Institutional Holding"}, {"from": "Mr. Govindarajan  Balakrishnan", "label": "LEADS", "title": "LEADS", "to": "EICHERMOT"}, {"from": "ETERNAL", "label": "IN_SECTOR", "title": "IN_SECTOR", "to": "Consumer Cyclical"}, {"from": "ETERNAL", "label": "IN_INDUSTRY", "title": "IN_INDUSTRY", "to": "Internet Retail"}, {"color": "#00D4FF", "dashes": false, "from": "ETERNAL", "label": "Total Revenue", "title": "VALUE_AT | Total Revenue: \u20b9172.92 Billion (2026-03-31)", "to": "Total Revenue", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "ETERNAL", "label": "Net Income", "title": "VALUE_AT | Net Income: \u20b91.74 Billion (2026-03-31)", "to": "Net Income", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "ETERNAL", "label": "Total Assets", "title": "VALUE_AT | Total Assets: \u20b9407.36 Billion (2026-03-31)", "to": "Total Assets", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "ETERNAL", "label": "Gross Profit", "title": "VALUE_AT | Gross Profit: \u20b969.52 Billion (2026-03-31)", "to": "Gross Profit", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "ETERNAL", "label": "Operating Income", "title": "VALUE_AT | Operating Income: \u20b93.42 Billion (2026-03-31)", "to": "Operating Income", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "ETERNAL", "label": "EBITDA", "title": "VALUE_AT | EBITDA: \u20b98.28 Billion (2026-03-31)", "to": "EBITDA", "width": 1.5}, {"from": "ETERNAL", "label": "HELD_BY_INSIDERS", "title": "HELD_BY_INSIDERS", "to": "ETERNAL \u2013 Insider Holding"}, {"from": "ETERNAL", "label": "HELD_BY_INSTITUTIONS", "title": "HELD_BY_INSTITUTIONS", "to": "ETERNAL \u2013 Institutional Holding"}, {"from": "Mr. Albinder Singh Dhindsa", "label": "LEADS", "title": "LEADS", "to": "ETERNAL"}, {"from": "GRASIM", "label": "IN_SECTOR", "title": "IN_SECTOR", "to": "Basic Materials"}, {"from": "GRASIM", "label": "IN_INDUSTRY", "title": "IN_INDUSTRY", "to": "Building Materials"}, {"color": "#00D4FF", "dashes": false, "from": "GRASIM", "label": "Total Revenue", "title": "VALUE_AT | Total Revenue: \u20b9443.12 Billion (2025-12-31)", "to": "Total Revenue", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "GRASIM", "label": "Net Income", "title": "VALUE_AT | Net Income: \u20b910.37 Billion (2025-12-31)", "to": "Net Income", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "GRASIM", "label": "Net Debt", "title": "VALUE_AT | Net Debt: \u20b91.79 Trillion (2025-03-31)", "to": "Net Debt", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "GRASIM", "label": "Total Assets", "title": "VALUE_AT | Total Assets: \u20b95.01 Trillion (2025-03-31)", "to": "Total Assets", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "GRASIM", "label": "Gross Profit", "title": "VALUE_AT | Gross Profit: \u20b9196.16 Billion (2025-12-31)", "to": "Gross Profit", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "GRASIM", "label": "Operating Income", "title": "VALUE_AT | Operating Income: \u20b92.65 Billion (2025-12-31)", "to": "Operating Income", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "GRASIM", "label": "EBITDA", "title": "VALUE_AT | EBITDA: \u20b961.58 Billion (2025-12-31)", "to": "EBITDA", "width": 1.5}, {"from": "GRASIM", "label": "HELD_BY_INSIDERS", "title": "HELD_BY_INSIDERS", "to": "GRASIM \u2013 Insider Holding"}, {"from": "GRASIM", "label": "HELD_BY_INSTITUTIONS", "title": "HELD_BY_INSTITUTIONS", "to": "GRASIM \u2013 Institutional Holding"}, {"from": "Mr. Himanshu  Kapania", "label": "LEADS", "title": "LEADS", "to": "GRASIM"}, {"from": "HCLTECH", "label": "IN_SECTOR", "title": "IN_SECTOR", "to": "Technology"}, {"from": "HCLTECH", "label": "IN_INDUSTRY", "title": "IN_INDUSTRY", "to": "Information Technology Services"}, {"color": "#00D4FF", "dashes": false, "from": "HCLTECH", "label": "Total Revenue", "title": "VALUE_AT | Total Revenue: \u20b9339.81 Billion (2026-03-31)", "to": "Total Revenue", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "HCLTECH", "label": "Net Income", "title": "VALUE_AT | Net Income: \u20b944.88 Billion (2026-03-31)", "to": "Net Income", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "HCLTECH", "label": "Total Assets", "title": "VALUE_AT | Total Assets: \u20b91.16 Trillion (2026-03-31)", "to": "Total Assets", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "HCLTECH", "label": "Gross Profit", "title": "VALUE_AT | Gross Profit: \u20b9138.95 Billion (2026-03-31)", "to": "Gross Profit", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "HCLTECH", "label": "Operating Income", "title": "VALUE_AT | Operating Income: \u20b9-47.12 Billion (2026-03-31)", "to": "Operating Income", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "HCLTECH", "label": "EBITDA", "title": "VALUE_AT | EBITDA: \u20b970.34 Billion (2026-03-31)", "to": "EBITDA", "width": 1.5}, {"from": "HCLTECH", "label": "HELD_BY_INSIDERS", "title": "HELD_BY_INSIDERS", "to": "HCLTECH \u2013 Insider Holding"}, {"from": "HCLTECH", "label": "HELD_BY_INSTITUTIONS", "title": "HELD_BY_INSTITUTIONS", "to": "HCLTECH \u2013 Institutional Holding"}, {"from": "Mr. ChinnaSwamy  VijayaKumar", "label": "LEADS", "title": "LEADS", "to": "HCLTECH"}, {"from": "HDFCBANK", "label": "IN_SECTOR", "title": "IN_SECTOR", "to": "Financial Services"}, {"from": "HDFCBANK", "label": "IN_INDUSTRY", "title": "IN_INDUSTRY", "to": "Banks - Regional"}, {"color": "#00D4FF", "dashes": false, "from": "HDFCBANK", "label": "Total Revenue", "title": "VALUE_AT | Total Revenue: \u20b9853.46 Billion (2025-06-30)", "to": "Total Revenue", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "HDFCBANK", "label": "Net Income", "title": "VALUE_AT | Net Income: \u20b9162.58 Billion (2025-06-30)", "to": "Net Income", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "HDFCBANK", "label": "Net Debt", "title": "VALUE_AT | Net Debt: \u20b93.85 Trillion (2025-06-30)", "to": "Net Debt", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "HDFCBANK", "label": "Total Assets", "title": "VALUE_AT | Total Assets: \u20b944.56 Trillion (2025-06-30)", "to": "Total Assets", "width": 1.5}, {"from": "HDFCBANK", "label": "HELD_BY_INSIDERS", "title": "HELD_BY_INSIDERS", "to": "HDFCBANK \u2013 Insider Holding"}, {"from": "HDFCBANK", "label": "HELD_BY_INSTITUTIONS", "title": "HELD_BY_INSTITUTIONS", "to": "HDFCBANK \u2013 Institutional Holding"}, {"from": "Mr. Sashidhar  Jagdishan", "label": "LEADS", "title": "LEADS", "to": "HDFCBANK"}, {"from": "HDFCLIFE", "label": "IN_SECTOR", "title": "IN_SECTOR", "to": "Financial Services"}, {"from": "HDFCLIFE", "label": "IN_INDUSTRY", "title": "IN_INDUSTRY", "to": "Insurance - Life"}, {"color": "#00D4FF", "dashes": false, "from": "HDFCLIFE", "label": "Total Revenue", "title": "VALUE_AT | Total Revenue: \u20b9198.15 Billion (2026-03-31)", "to": "Total Revenue", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "HDFCLIFE", "label": "Net Income", "title": "VALUE_AT | Net Income: \u20b94.97 Billion (2026-03-31)", "to": "Net Income", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "HDFCLIFE", "label": "Net Debt", "title": "VALUE_AT | Net Debt: \u20b911.09 Billion (2026-03-31)", "to": "Net Debt", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "HDFCLIFE", "label": "Total Assets", "title": "VALUE_AT | Total Assets: \u20b93.91 Trillion (2026-03-31)", "to": "Total Assets", "width": 1.5}, {"from": "HDFCLIFE", "label": "HELD_BY_INSIDERS", "title": "HELD_BY_INSIDERS", "to": "HDFCLIFE \u2013 Insider Holding"}, {"from": "HDFCLIFE", "label": "HELD_BY_INSTITUTIONS", "title": "HELD_BY_INSTITUTIONS", "to": "HDFCLIFE \u2013 Institutional Holding"}, {"from": "Ms. Vibha U. Padalkar", "label": "LEADS", "title": "LEADS", "to": "HDFCLIFE"}, {"from": "HINDALCO", "label": "IN_SECTOR", "title": "IN_SECTOR", "to": "Basic Materials"}, {"from": "HINDALCO", "label": "IN_INDUSTRY", "title": "IN_INDUSTRY", "to": "Aluminum"}, {"color": "#00D4FF", "dashes": false, "from": "HINDALCO", "label": "Total Revenue", "title": "VALUE_AT | Total Revenue: \u20b9665.21 Billion (2025-12-31)", "to": "Total Revenue", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "HINDALCO", "label": "Net Income", "title": "VALUE_AT | Net Income: \u20b920.49 Billion (2025-12-31)", "to": "Net Income", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "HINDALCO", "label": "Net Debt", "title": "VALUE_AT | Net Debt: \u20b9617.26 Billion (2025-09-30)", "to": "Net Debt", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "HINDALCO", "label": "Total Assets", "title": "VALUE_AT | Total Assets: \u20b92.97 Trillion (2025-09-30)", "to": "Total Assets", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "HINDALCO", "label": "Gross Profit", "title": "VALUE_AT | Gross Profit: \u20b9218.02 Billion (2025-12-31)", "to": "Gross Profit", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "HINDALCO", "label": "Operating Income", "title": "VALUE_AT | Operating Income: \u20b95.49 Billion (2025-12-31)", "to": "Operating Income", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "HINDALCO", "label": "EBITDA", "title": "VALUE_AT | EBITDA: \u20b963.01 Billion (2025-12-31)", "to": "EBITDA", "width": 1.5}, {"from": "HINDALCO", "label": "HELD_BY_INSIDERS", "title": "HELD_BY_INSIDERS", "to": "HINDALCO \u2013 Insider Holding"}, {"from": "HINDALCO", "label": "HELD_BY_INSTITUTIONS", "title": "HELD_BY_INSTITUTIONS", "to": "HINDALCO \u2013 Institutional Holding"}, {"from": "Mr. Satish  Pai", "label": "LEADS", "title": "LEADS", "to": "HINDALCO"}, {"from": "HINDUNILVR", "label": "IN_SECTOR", "title": "IN_SECTOR", "to": "Consumer Defensive"}, {"from": "HINDUNILVR", "label": "IN_INDUSTRY", "title": "IN_INDUSTRY", "to": "Household \u0026 Personal Products"}, {"color": "#00D4FF", "dashes": false, "from": "HINDUNILVR", "label": "Total Revenue", "title": "VALUE_AT | Total Revenue: \u20b9162.35 Billion (2025-12-31)", "to": "Total Revenue", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "HINDUNILVR", "label": "Net Income", "title": "VALUE_AT | Net Income: \u20b921.22 Billion (2025-12-31)", "to": "Net Income", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "HINDUNILVR", "label": "Total Assets", "title": "VALUE_AT | Total Assets: \u20b9798.80 Billion (2025-03-31)", "to": "Total Assets", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "HINDUNILVR", "label": "Gross Profit", "title": "VALUE_AT | Gross Profit: \u20b982.44 Billion (2025-12-31)", "to": "Gross Profit", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "HINDUNILVR", "label": "Operating Income", "title": "VALUE_AT | Operating Income: \u20b91.39 Billion (2025-12-31)", "to": "Operating Income", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "HINDUNILVR", "label": "EBITDA", "title": "VALUE_AT | EBITDA: \u20b939.20 Billion (2025-12-31)", "to": "EBITDA", "width": 1.5}, {"from": "HINDUNILVR", "label": "HELD_BY_INSIDERS", "title": "HELD_BY_INSIDERS", "to": "HINDUNILVR \u2013 Insider Holding"}, {"from": "HINDUNILVR", "label": "HELD_BY_INSTITUTIONS", "title": "HELD_BY_INSTITUTIONS", "to": "HINDUNILVR \u2013 Institutional Holding"}, {"from": "Ms. Priya  Nair", "label": "LEADS", "title": "LEADS", "to": "HINDUNILVR"}, {"from": "ICICIBANK", "label": "IN_SECTOR", "title": "IN_SECTOR", "to": "Financial Services"}, {"from": "ICICIBANK", "label": "IN_INDUSTRY", "title": "IN_INDUSTRY", "to": "Banks - Regional"}, {"color": "#00D4FF", "dashes": false, "from": "ICICIBANK", "label": "Total Revenue", "title": "VALUE_AT | Total Revenue: \u20b9625.67 Billion (2026-03-31)", "to": "Total Revenue", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "ICICIBANK", "label": "Net Income", "title": "VALUE_AT | Net Income: \u20b9147.55 Billion (2026-03-31)", "to": "Net Income", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "ICICIBANK", "label": "Net Debt", "title": "VALUE_AT | Net Debt: \u20b9360.58 Billion (2025-12-31)", "to": "Net Debt", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "ICICIBANK", "label": "Total Assets", "title": "VALUE_AT | Total Assets: \u20b929.14 Trillion (2026-03-31)", "to": "Total Assets", "width": 1.5}, {"from": "ICICIBANK", "label": "HELD_BY_INSIDERS", "title": "HELD_BY_INSIDERS", "to": "ICICIBANK \u2013 Insider Holding"}, {"from": "ICICIBANK", "label": "HELD_BY_INSTITUTIONS", "title": "HELD_BY_INSTITUTIONS", "to": "ICICIBANK \u2013 Institutional Holding"}, {"from": "Mr. Sandeep  Bakhshi B.E.", "label": "LEADS", "title": "LEADS", "to": "ICICIBANK"}, {"from": "INDIGO", "label": "IN_SECTOR", "title": "IN_SECTOR", "to": "Industrials"}, {"from": "INDIGO", "label": "IN_INDUSTRY", "title": "IN_INDUSTRY", "to": "Airlines"}, {"color": "#00D4FF", "dashes": false, "from": "INDIGO", "label": "Total Revenue", "title": "VALUE_AT | Total Revenue: \u20b9234.72 Billion (2025-12-31)", "to": "Total Revenue", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "INDIGO", "label": "Net Income", "title": "VALUE_AT | Net Income: \u20b95.50 Billion (2025-12-31)", "to": "Net Income", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "INDIGO", "label": "Net Debt", "title": "VALUE_AT | Net Debt: \u20b97.27 Billion (2025-03-31)", "to": "Net Debt", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "INDIGO", "label": "Total Assets", "title": "VALUE_AT | Total Assets: \u20b91.16 Trillion (2025-03-31)", "to": "Total Assets", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "INDIGO", "label": "Gross Profit", "title": "VALUE_AT | Gross Profit: \u20b958.94 Billion (2025-12-31)", "to": "Gross Profit", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "INDIGO", "label": "Operating Income", "title": "VALUE_AT | Operating Income: \u20b910.69 Billion (2025-12-31)", "to": "Operating Income", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "INDIGO", "label": "EBITDA", "title": "VALUE_AT | EBITDA: \u20b936.54 Billion (2025-12-31)", "to": "EBITDA", "width": 1.5}, {"from": "INDIGO", "label": "HELD_BY_INSIDERS", "title": "HELD_BY_INSIDERS", "to": "INDIGO \u2013 Insider Holding"}, {"from": "INDIGO", "label": "HELD_BY_INSTITUTIONS", "title": "HELD_BY_INSTITUTIONS", "to": "INDIGO \u2013 Institutional Holding"}, {"from": "Mr. Rahul  Bhatia", "label": "LEADS", "title": "LEADS", "to": "INDIGO"}, {"from": "INFY", "label": "IN_SECTOR", "title": "IN_SECTOR", "to": "Technology"}, {"from": "INFY", "label": "IN_INDUSTRY", "title": "IN_INDUSTRY", "to": "Information Technology Services"}, {"color": "#00D4FF", "dashes": false, "from": "INFY", "label": "Total Revenue", "title": "VALUE_AT | Total Revenue: \u20b95.04 Billion (2026-03-31)", "to": "Total Revenue", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "INFY", "label": "Net Income", "title": "VALUE_AT | Net Income: \u20b991.90 Crore (2026-03-31)", "to": "Net Income", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "INFY", "label": "Total Assets", "title": "VALUE_AT | Total Assets: \u20b916.45 Billion (2026-03-31)", "to": "Total Assets", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "INFY", "label": "Gross Profit", "title": "VALUE_AT | Gross Profit: \u20b91.55 Billion (2026-03-31)", "to": "Gross Profit", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "INFY", "label": "Operating Income", "title": "VALUE_AT | Operating Income: \u20b91.05 Billion (2026-03-31)", "to": "Operating Income", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "INFY", "label": "EBITDA", "title": "VALUE_AT | EBITDA: \u20b91.33 Billion (2026-03-31)", "to": "EBITDA", "width": 1.5}, {"from": "INFY", "label": "HELD_BY_INSIDERS", "title": "HELD_BY_INSIDERS", "to": "INFY \u2013 Insider Holding"}, {"from": "INFY", "label": "HELD_BY_INSTITUTIONS", "title": "HELD_BY_INSTITUTIONS", "to": "INFY \u2013 Institutional Holding"}, {"from": "Mr. Salil Satish Parekh", "label": "LEADS", "title": "LEADS", "to": "INFY"}, {"from": "ITC", "label": "IN_SECTOR", "title": "IN_SECTOR", "to": "Consumer Defensive"}, {"from": "ITC", "label": "IN_INDUSTRY", "title": "IN_INDUSTRY", "to": "Tobacco"}, {"color": "#00D4FF", "dashes": false, "from": "ITC", "label": "Total Revenue", "title": "VALUE_AT | Total Revenue: \u20b9199.18 Billion (2025-12-31)", "to": "Total Revenue", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "ITC", "label": "Net Income", "title": "VALUE_AT | Net Income: \u20b949.31 Billion (2025-12-31)", "to": "Net Income", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "ITC", "label": "Total Assets", "title": "VALUE_AT | Total Assets: \u20b9880.91 Billion (2025-03-31)", "to": "Total Assets", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "ITC", "label": "Gross Profit", "title": "VALUE_AT | Gross Profit: \u20b9115.01 Billion (2025-12-31)", "to": "Gross Profit", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "ITC", "label": "Operating Income", "title": "VALUE_AT | Operating Income: \u20b95.74 Billion (2025-12-31)", "to": "Operating Income", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "ITC", "label": "EBITDA", "title": "VALUE_AT | EBITDA: \u20b975.59 Billion (2025-12-31)", "to": "EBITDA", "width": 1.5}, {"from": "ITC", "label": "HELD_BY_INSIDERS", "title": "HELD_BY_INSIDERS", "to": "ITC \u2013 Insider Holding"}, {"from": "ITC", "label": "HELD_BY_INSTITUTIONS", "title": "HELD_BY_INSTITUTIONS", "to": "ITC \u2013 Institutional Holding"}, {"from": "Mr. Sanjiv  Puri", "label": "LEADS", "title": "LEADS", "to": "ITC"}, {"from": "JIOFIN", "label": "IN_SECTOR", "title": "IN_SECTOR", "to": "Financial Services"}, {"from": "JIOFIN", "label": "IN_INDUSTRY", "title": "IN_INDUSTRY", "to": "Asset Management"}, {"color": "#00D4FF", "dashes": false, "from": "JIOFIN", "label": "Total Revenue", "title": "VALUE_AT | Total Revenue: \u20b98.64 Billion (2026-03-31)", "to": "Total Revenue", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "JIOFIN", "label": "Net Income", "title": "VALUE_AT | Net Income: \u20b92.72 Billion (2026-03-31)", "to": "Net Income", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "JIOFIN", "label": "Net Debt", "title": "VALUE_AT | Net Debt: \u20b9210.53 Billion (2026-03-31)", "to": "Net Debt", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "JIOFIN", "label": "Total Assets", "title": "VALUE_AT | Total Assets: \u20b91.63 Trillion (2026-03-31)", "to": "Total Assets", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "JIOFIN", "label": "Gross Profit", "title": "VALUE_AT | Gross Profit: \u20b97.35 Billion (2026-03-31)", "to": "Gross Profit", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "JIOFIN", "label": "Operating Income", "title": "VALUE_AT | Operating Income: \u20b91.18 Crore (2026-03-31)", "to": "Operating Income", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "JIOFIN", "label": "EBITDA", "title": "VALUE_AT | EBITDA: \u20b96.45 Billion (2026-03-31)", "to": "EBITDA", "width": 1.5}, {"from": "JIOFIN", "label": "HELD_BY_INSIDERS", "title": "HELD_BY_INSIDERS", "to": "JIOFIN \u2013 Insider Holding"}, {"from": "JIOFIN", "label": "HELD_BY_INSTITUTIONS", "title": "HELD_BY_INSTITUTIONS", "to": "JIOFIN \u2013 Institutional Holding"}, {"from": "Mr. Hitesh Kumar Sethia", "label": "LEADS", "title": "LEADS", "to": "JIOFIN"}, {"from": "JSWSTEEL", "label": "IN_SECTOR", "title": "IN_SECTOR", "to": "Basic Materials"}, {"from": "JSWSTEEL", "label": "IN_INDUSTRY", "title": "IN_INDUSTRY", "to": "Steel"}, {"color": "#00D4FF", "dashes": false, "from": "JSWSTEEL", "label": "Total Revenue", "title": "VALUE_AT | Total Revenue: \u20b9452.19 Billion (2025-12-31)", "to": "Total Revenue", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "JSWSTEEL", "label": "Net Income", "title": "VALUE_AT | Net Income: \u20b921.39 Billion (2025-12-31)", "to": "Net Income", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "JSWSTEEL", "label": "Net Debt", "title": "VALUE_AT | Net Debt: \u20b91.05 Trillion (2025-03-31)", "to": "Net Debt", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "JSWSTEEL", "label": "Total Assets", "title": "VALUE_AT | Total Assets: \u20b92.41 Trillion (2025-03-31)", "to": "Total Assets", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "JSWSTEEL", "label": "Gross Profit", "title": "VALUE_AT | Gross Profit: \u20b9179.53 Billion (2025-12-31)", "to": "Gross Profit", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "JSWSTEEL", "label": "Operating Income", "title": "VALUE_AT | Operating Income: \u20b92.73 Billion (2025-12-31)", "to": "Operating Income", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "JSWSTEEL", "label": "EBITDA", "title": "VALUE_AT | EBITDA: \u20b966.52 Billion (2025-12-31)", "to": "EBITDA", "width": 1.5}, {"from": "JSWSTEEL", "label": "HELD_BY_INSIDERS", "title": "HELD_BY_INSIDERS", "to": "JSWSTEEL \u2013 Insider Holding"}, {"from": "JSWSTEEL", "label": "HELD_BY_INSTITUTIONS", "title": "HELD_BY_INSTITUTIONS", "to": "JSWSTEEL \u2013 Institutional Holding"}, {"from": "Mr. Sajjan Kumar Jindal B.E.", "label": "LEADS", "title": "LEADS", "to": "JSWSTEEL"}, {"from": "KOTAKBANK", "label": "IN_SECTOR", "title": "IN_SECTOR", "to": "Financial Services"}, {"from": "KOTAKBANK", "label": "IN_INDUSTRY", "title": "IN_INDUSTRY", "to": "Banks - Regional"}, {"color": "#00D4FF", "dashes": false, "from": "KOTAKBANK", "label": "Total Revenue", "title": "VALUE_AT | Total Revenue: \u20b9204.59 Billion (2025-12-31)", "to": "Total Revenue", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "KOTAKBANK", "label": "Net Income", "title": "VALUE_AT | Net Income: \u20b949.24 Billion (2025-12-31)", "to": "Net Income", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "KOTAKBANK", "label": "Net Debt", "title": "VALUE_AT | Net Debt: \u20b956.38 Billion (2025-03-31)", "to": "Net Debt", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "KOTAKBANK", "label": "Total Assets", "title": "VALUE_AT | Total Assets: \u20b98.80 Trillion (2025-03-31)", "to": "Total Assets", "width": 1.5}, {"from": "KOTAKBANK", "label": "HELD_BY_INSIDERS", "title": "HELD_BY_INSIDERS", "to": "KOTAKBANK \u2013 Insider Holding"}, {"from": "KOTAKBANK", "label": "HELD_BY_INSTITUTIONS", "title": "HELD_BY_INSTITUTIONS", "to": "KOTAKBANK \u2013 Institutional Holding"}, {"from": "Mr. Ashok Valiram Vaswani", "label": "LEADS", "title": "LEADS", "to": "KOTAKBANK"}, {"from": "LT", "label": "IN_SECTOR", "title": "IN_SECTOR", "to": "Industrials"}, {"from": "LT", "label": "IN_INDUSTRY", "title": "IN_INDUSTRY", "to": "Engineering \u0026 Construction"}, {"color": "#00D4FF", "dashes": false, "from": "LT", "label": "Total Revenue", "title": "VALUE_AT | Total Revenue: \u20b9714.50 Billion (2025-12-31)", "to": "Total Revenue", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "LT", "label": "Net Income", "title": "VALUE_AT | Net Income: \u20b945.59 Billion (2025-12-31)", "to": "Net Income", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "LT", "label": "Net Debt", "title": "VALUE_AT | Net Debt: \u20b91.17 Trillion (2025-03-31)", "to": "Net Debt", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "LT", "label": "Total Assets", "title": "VALUE_AT | Total Assets: \u20b93.80 Trillion (2025-03-31)", "to": "Total Assets", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "LT", "label": "Gross Profit", "title": "VALUE_AT | Gross Profit: \u20b9233.88 Billion (2025-12-31)", "to": "Gross Profit", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "LT", "label": "Operating Income", "title": "VALUE_AT | Operating Income: \u20b914.41 Billion (2025-12-31)", "to": "Operating Income", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "LT", "label": "EBITDA", "title": "VALUE_AT | EBITDA: \u20b988.58 Billion (2025-12-31)", "to": "EBITDA", "width": 1.5}, {"from": "LT", "label": "HELD_BY_INSIDERS", "title": "HELD_BY_INSIDERS", "to": "LT \u2013 Insider Holding"}, {"from": "LT", "label": "HELD_BY_INSTITUTIONS", "title": "HELD_BY_INSTITUTIONS", "to": "LT \u2013 Institutional Holding"}, {"from": "Mr. Sekharipuram Narayanan Subrahmanyan", "label": "LEADS", "title": "LEADS", "to": "LT"}, {"from": "M\u0026M", "label": "IN_SECTOR", "title": "IN_SECTOR", "to": "Consumer Cyclical"}, {"from": "M\u0026M", "label": "IN_INDUSTRY", "title": "IN_INDUSTRY", "to": "Auto Manufacturers"}, {"color": "#00D4FF", "dashes": false, "from": "M\u0026M", "label": "Total Revenue", "title": "VALUE_AT | Total Revenue: \u20b9515.80 Billion (2025-12-31)", "to": "Total Revenue", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "M\u0026M", "label": "Net Income", "title": "VALUE_AT | Net Income: \u20b946.75 Billion (2025-12-31)", "to": "Net Income", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "M\u0026M", "label": "Net Debt", "title": "VALUE_AT | Net Debt: \u20b91.16 Trillion (2025-03-31)", "to": "Net Debt", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "M\u0026M", "label": "Total Assets", "title": "VALUE_AT | Total Assets: \u20b92.78 Trillion (2025-03-31)", "to": "Total Assets", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "M\u0026M", "label": "Gross Profit", "title": "VALUE_AT | Gross Profit: \u20b9194.33 Billion (2025-12-31)", "to": "Gross Profit", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "M\u0026M", "label": "Operating Income", "title": "VALUE_AT | Operating Income: \u20b98.59 Billion (2025-12-31)", "to": "Operating Income", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "M\u0026M", "label": "EBITDA", "title": "VALUE_AT | EBITDA: \u20b9114.30 Billion (2025-12-31)", "to": "EBITDA", "width": 1.5}, {"from": "M\u0026M", "label": "HELD_BY_INSIDERS", "title": "HELD_BY_INSIDERS", "to": "M\u0026M \u2013 Insider Holding"}, {"from": "M\u0026M", "label": "HELD_BY_INSTITUTIONS", "title": "HELD_BY_INSTITUTIONS", "to": "M\u0026M \u2013 Institutional Holding"}, {"from": "Dr. Anish Dilip Shah Ph.D.", "label": "LEADS", "title": "LEADS", "to": "M\u0026M"}, {"from": "MARUTI", "label": "IN_SECTOR", "title": "IN_SECTOR", "to": "Consumer Cyclical"}, {"from": "MARUTI", "label": "IN_INDUSTRY", "title": "IN_INDUSTRY", "to": "Auto Manufacturers"}, {"color": "#00D4FF", "dashes": false, "from": "MARUTI", "label": "Total Revenue", "title": "VALUE_AT | Total Revenue: \u20b9515.67 Billion (2026-03-31)", "to": "Total Revenue", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "MARUTI", "label": "Net Income", "title": "VALUE_AT | Net Income: \u20b936.59 Billion (2026-03-31)", "to": "Net Income", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "MARUTI", "label": "Total Assets", "title": "VALUE_AT | Total Assets: \u20b91.49 Trillion (2026-03-31)", "to": "Total Assets", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "MARUTI", "label": "Gross Profit", "title": "VALUE_AT | Gross Profit: \u20b9131.70 Billion (2026-03-31)", "to": "Gross Profit", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "MARUTI", "label": "Operating Income", "title": "VALUE_AT | Operating Income: \u20b94.84 Billion (2026-03-31)", "to": "Operating Income", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "MARUTI", "label": "EBITDA", "title": "VALUE_AT | EBITDA: \u20b967.39 Billion (2026-03-31)", "to": "EBITDA", "width": 1.5}, {"from": "MARUTI", "label": "HELD_BY_INSIDERS", "title": "HELD_BY_INSIDERS", "to": "MARUTI \u2013 Insider Holding"}, {"from": "MARUTI", "label": "HELD_BY_INSTITUTIONS", "title": "HELD_BY_INSTITUTIONS", "to": "MARUTI \u2013 Institutional Holding"}, {"from": "Mr. Hisashi  Takeuchi", "label": "LEADS", "title": "LEADS", "to": "MARUTI"}, {"from": "MAXHEALTH", "label": "IN_SECTOR", "title": "IN_SECTOR", "to": "Healthcare"}, {"from": "MAXHEALTH", "label": "IN_INDUSTRY", "title": "IN_INDUSTRY", "to": "Medical Care Facilities"}, {"color": "#00D4FF", "dashes": false, "from": "MAXHEALTH", "label": "Total Revenue", "title": "VALUE_AT | Total Revenue: \u20b920.68 Billion (2025-12-31)", "to": "Total Revenue", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "MAXHEALTH", "label": "Net Income", "title": "VALUE_AT | Net Income: \u20b93.01 Billion (2025-12-31)", "to": "Net Income", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "MAXHEALTH", "label": "Net Debt", "title": "VALUE_AT | Net Debt: \u20b922.39 Billion (2025-09-30)", "to": "Net Debt", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "MAXHEALTH", "label": "Total Assets", "title": "VALUE_AT | Total Assets: \u20b9162.81 Billion (2025-09-30)", "to": "Total Assets", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "MAXHEALTH", "label": "Gross Profit", "title": "VALUE_AT | Gross Profit: \u20b916.27 Billion (2025-12-31)", "to": "Gross Profit", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "MAXHEALTH", "label": "Operating Income", "title": "VALUE_AT | Operating Income: \u20b915.50 Crore (2025-12-31)", "to": "Operating Income", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "MAXHEALTH", "label": "EBITDA", "title": "VALUE_AT | EBITDA: \u20b95.84 Billion (2025-12-31)", "to": "EBITDA", "width": 1.5}, {"from": "MAXHEALTH", "label": "HELD_BY_INSIDERS", "title": "HELD_BY_INSIDERS", "to": "MAXHEALTH \u2013 Insider Holding"}, {"from": "MAXHEALTH", "label": "HELD_BY_INSTITUTIONS", "title": "HELD_BY_INSTITUTIONS", "to": "MAXHEALTH \u2013 Institutional Holding"}, {"from": "Mr. Abhay  Soi", "label": "LEADS", "title": "LEADS", "to": "MAXHEALTH"}, {"from": "NESTLEIND", "label": "IN_SECTOR", "title": "IN_SECTOR", "to": "Consumer Defensive"}, {"from": "NESTLEIND", "label": "IN_INDUSTRY", "title": "IN_INDUSTRY", "to": "Packaged Foods"}, {"color": "#00D4FF", "dashes": false, "from": "NESTLEIND", "label": "Total Revenue", "title": "VALUE_AT | Total Revenue: \u20b956.44 Billion (2025-12-31)", "to": "Total Revenue", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "NESTLEIND", "label": "Net Income", "title": "VALUE_AT | Net Income: \u20b99.98 Billion (2025-12-31)", "to": "Net Income", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "NESTLEIND", "label": "Net Debt", "title": "VALUE_AT | Net Debt: \u20b97.04 Billion (2025-03-31)", "to": "Net Debt", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "NESTLEIND", "label": "Total Assets", "title": "VALUE_AT | Total Assets: \u20b9121.93 Billion (2025-03-31)", "to": "Total Assets", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "NESTLEIND", "label": "Gross Profit", "title": "VALUE_AT | Gross Profit: \u20b931.35 Billion (2025-12-31)", "to": "Gross Profit", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "NESTLEIND", "label": "Operating Income", "title": "VALUE_AT | Operating Income: \u20b910.67 Billion (2024-09-30)", "to": "Operating Income", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "NESTLEIND", "label": "EBITDA", "title": "VALUE_AT | EBITDA: \u20b911.94 Billion (2025-12-31)", "to": "EBITDA", "width": 1.5}, {"from": "NESTLEIND", "label": "HELD_BY_INSIDERS", "title": "HELD_BY_INSIDERS", "to": "NESTLEIND \u2013 Insider Holding"}, {"from": "NESTLEIND", "label": "HELD_BY_INSTITUTIONS", "title": "HELD_BY_INSTITUTIONS", "to": "NESTLEIND \u2013 Institutional Holding"}, {"from": "Mr. Manish  Tiwary", "label": "LEADS", "title": "LEADS", "to": "NESTLEIND"}, {"from": "NTPC", "label": "IN_SECTOR", "title": "IN_SECTOR", "to": "Utilities"}, {"from": "NTPC", "label": "IN_INDUSTRY", "title": "IN_INDUSTRY", "to": "Utilities - Regulated Electric"}, {"color": "#00D4FF", "dashes": false, "from": "NTPC", "label": "Total Revenue", "title": "VALUE_AT | Total Revenue: \u20b9458.46 Billion (2025-12-31)", "to": "Total Revenue", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "NTPC", "label": "Net Income", "title": "VALUE_AT | Net Income: \u20b948.24 Billion (2025-12-31)", "to": "Net Income", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "NTPC", "label": "Net Debt", "title": "VALUE_AT | Net Debt: \u20b92.46 Trillion (2025-03-31)", "to": "Net Debt", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "NTPC", "label": "Total Assets", "title": "VALUE_AT | Total Assets: \u20b95.24 Trillion (2025-03-31)", "to": "Total Assets", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "NTPC", "label": "Gross Profit", "title": "VALUE_AT | Gross Profit: \u20b9216.23 Billion (2025-12-31)", "to": "Gross Profit", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "NTPC", "label": "Operating Income", "title": "VALUE_AT | Operating Income: \u20b94.59 Billion (2025-12-31)", "to": "Operating Income", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "NTPC", "label": "EBITDA", "title": "VALUE_AT | EBITDA: \u20b9156.42 Billion (2025-12-31)", "to": "EBITDA", "width": 1.5}, {"from": "NTPC", "label": "HELD_BY_INSIDERS", "title": "HELD_BY_INSIDERS", "to": "NTPC \u2013 Insider Holding"}, {"from": "NTPC", "label": "HELD_BY_INSTITUTIONS", "title": "HELD_BY_INSTITUTIONS", "to": "NTPC \u2013 Institutional Holding"}, {"from": "Mr. Gurdeep  Singh", "label": "LEADS", "title": "LEADS", "to": "NTPC"}, {"from": "ONGC", "label": "IN_SECTOR", "title": "IN_SECTOR", "to": "Energy"}, {"from": "ONGC", "label": "IN_INDUSTRY", "title": "IN_INDUSTRY", "to": "Oil \u0026 Gas Integrated"}, {"color": "#00D4FF", "dashes": false, "from": "ONGC", "label": "Total Revenue", "title": "VALUE_AT | Total Revenue: \u20b91.67 Trillion (2025-12-31)", "to": "Total Revenue", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "ONGC", "label": "Net Income", "title": "VALUE_AT | Net Income: \u20b9100.16 Billion (2025-12-31)", "to": "Net Income", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "ONGC", "label": "Net Debt", "title": "VALUE_AT | Net Debt: \u20b91.37 Trillion (2025-09-30)", "to": "Net Debt", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "ONGC", "label": "Total Assets", "title": "VALUE_AT | Total Assets: \u20b97.81 Trillion (2025-09-30)", "to": "Total Assets", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "ONGC", "label": "Gross Profit", "title": "VALUE_AT | Gross Profit: \u20b9541.26 Billion (2025-12-31)", "to": "Gross Profit", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "ONGC", "label": "Operating Income", "title": "VALUE_AT | Operating Income: \u20b9-102.26 Billion (2025-12-31)", "to": "Operating Income", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "ONGC", "label": "EBITDA", "title": "VALUE_AT | EBITDA: \u20b9214.09 Billion (2025-12-31)", "to": "EBITDA", "width": 1.5}, {"from": "ONGC", "label": "HELD_BY_INSIDERS", "title": "HELD_BY_INSIDERS", "to": "ONGC \u2013 Insider Holding"}, {"from": "ONGC", "label": "HELD_BY_INSTITUTIONS", "title": "HELD_BY_INSTITUTIONS", "to": "ONGC \u2013 Institutional Holding"}, {"from": "Mr. Arun Kumar Singh B.Sc., B.Sc. (Engg.)", "label": "LEADS", "title": "LEADS", "to": "ONGC"}, {"from": "POWERGRID", "label": "IN_SECTOR", "title": "IN_SECTOR", "to": "Utilities"}, {"from": "POWERGRID", "label": "IN_INDUSTRY", "title": "IN_INDUSTRY", "to": "Utilities - Regulated Electric"}, {"color": "#00D4FF", "dashes": false, "from": "POWERGRID", "label": "Total Revenue", "title": "VALUE_AT | Total Revenue: \u20b9123.95 Billion (2025-12-31)", "to": "Total Revenue", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "POWERGRID", "label": "Net Income", "title": "VALUE_AT | Net Income: \u20b939.26 Billion (2025-12-31)", "to": "Net Income", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "POWERGRID", "label": "Net Debt", "title": "VALUE_AT | Net Debt: \u20b91.31 Trillion (2025-03-31)", "to": "Net Debt", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "POWERGRID", "label": "Total Assets", "title": "VALUE_AT | Total Assets: \u20b92.66 Trillion (2025-03-31)", "to": "Total Assets", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "POWERGRID", "label": "Operating Income", "title": "VALUE_AT | Operating Income: \u20b92.04 Billion (2025-12-31)", "to": "Operating Income", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "POWERGRID", "label": "EBITDA", "title": "VALUE_AT | EBITDA: \u20b9108.11 Billion (2025-12-31)", "to": "EBITDA", "width": 1.5}, {"from": "POWERGRID", "label": "HELD_BY_INSIDERS", "title": "HELD_BY_INSIDERS", "to": "POWERGRID \u2013 Insider Holding"}, {"from": "POWERGRID", "label": "HELD_BY_INSTITUTIONS", "title": "HELD_BY_INSTITUTIONS", "to": "POWERGRID \u2013 Institutional Holding"}, {"from": "Mr. Vamsi Rama Mohan Burra", "label": "LEADS", "title": "LEADS", "to": "POWERGRID"}, {"from": "RELIANCE", "label": "IN_SECTOR", "title": "IN_SECTOR", "to": "Energy"}, {"from": "RELIANCE", "label": "IN_INDUSTRY", "title": "IN_INDUSTRY", "to": "Oil \u0026 Gas Refining \u0026 Marketing"}, {"color": "#00D4FF", "dashes": false, "from": "RELIANCE", "label": "Total Revenue", "title": "VALUE_AT | Total Revenue: \u20b92.94 Trillion (2026-03-31)", "to": "Total Revenue", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "RELIANCE", "label": "Net Income", "title": "VALUE_AT | Net Income: \u20b9169.71 Billion (2026-03-31)", "to": "Net Income", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "RELIANCE", "label": "Net Debt", "title": "VALUE_AT | Net Debt: \u20b92.28 Trillion (2026-03-31)", "to": "Net Debt", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "RELIANCE", "label": "Total Assets", "title": "VALUE_AT | Total Assets: \u20b921.78 Trillion (2026-03-31)", "to": "Total Assets", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "RELIANCE", "label": "Gross Profit", "title": "VALUE_AT | Gross Profit: \u20b9782.09 Billion (2026-03-31)", "to": "Gross Profit", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "RELIANCE", "label": "Operating Income", "title": "VALUE_AT | Operating Income: \u20b944.47 Billion (2026-03-31)", "to": "Operating Income", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "RELIANCE", "label": "EBITDA", "title": "VALUE_AT | EBITDA: \u20b9337.80 Billion (2026-03-31)", "to": "EBITDA", "width": 1.5}, {"from": "RELIANCE", "label": "HELD_BY_INSIDERS", "title": "HELD_BY_INSIDERS", "to": "RELIANCE \u2013 Insider Holding"}, {"from": "RELIANCE", "label": "HELD_BY_INSTITUTIONS", "title": "HELD_BY_INSTITUTIONS", "to": "RELIANCE \u2013 Institutional Holding"}, {"from": "Mr. Mukesh Dhirubhai Ambani", "label": "LEADS", "title": "LEADS", "to": "RELIANCE"}, {"from": "SBILIFE", "label": "IN_SECTOR", "title": "IN_SECTOR", "to": "Financial Services"}, {"from": "SBILIFE", "label": "IN_INDUSTRY", "title": "IN_INDUSTRY", "to": "Insurance - Life"}, {"color": "#00D4FF", "dashes": false, "from": "SBILIFE", "label": "Total Revenue", "title": "VALUE_AT | Total Revenue: \u20b940.95 Billion (2026-03-31)", "to": "Total Revenue", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "SBILIFE", "label": "Net Income", "title": "VALUE_AT | Net Income: \u20b98.05 Billion (2026-03-31)", "to": "Net Income", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "SBILIFE", "label": "Total Assets", "title": "VALUE_AT | Total Assets: \u20b95.00 Trillion (2026-03-31)", "to": "Total Assets", "width": 1.5}, {"from": "SBILIFE", "label": "HELD_BY_INSIDERS", "title": "HELD_BY_INSIDERS", "to": "SBILIFE \u2013 Insider Holding"}, {"from": "SBILIFE", "label": "HELD_BY_INSTITUTIONS", "title": "HELD_BY_INSTITUTIONS", "to": "SBILIFE \u2013 Institutional Holding"}, {"from": "Mr. Amit  Jhingran", "label": "LEADS", "title": "LEADS", "to": "SBILIFE"}, {"from": "SBIN", "label": "IN_SECTOR", "title": "IN_SECTOR", "to": "Financial Services"}, {"from": "SBIN", "label": "IN_INDUSTRY", "title": "IN_INDUSTRY", "to": "Banks - Regional"}, {"color": "#00D4FF", "dashes": false, "from": "SBIN", "label": "Total Revenue", "title": "VALUE_AT | Total Revenue: \u20b91.07 Trillion (2025-12-31)", "to": "Total Revenue", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "SBIN", "label": "Net Income", "title": "VALUE_AT | Net Income: \u20b9213.17 Billion (2025-12-31)", "to": "Net Income", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "SBIN", "label": "Net Debt", "title": "VALUE_AT | Net Debt: \u20b93.72 Trillion (2025-12-31)", "to": "Net Debt", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "SBIN", "label": "Total Assets", "title": "VALUE_AT | Total Assets: \u20b978.81 Trillion (2025-12-31)", "to": "Total Assets", "width": 1.5}, {"from": "SBIN", "label": "HELD_BY_INSIDERS", "title": "HELD_BY_INSIDERS", "to": "SBIN \u2013 Insider Holding"}, {"from": "SBIN", "label": "HELD_BY_INSTITUTIONS", "title": "HELD_BY_INSTITUTIONS", "to": "SBIN \u2013 Institutional Holding"}, {"from": "Mr. Rana Ashutosh Kumar Singh", "label": "LEADS", "title": "LEADS", "to": "SBIN"}, {"from": "SHRIRAMFIN", "label": "IN_SECTOR", "title": "IN_SECTOR", "to": "Financial Services"}, {"from": "SHRIRAMFIN", "label": "IN_INDUSTRY", "title": "IN_INDUSTRY", "to": "Credit Services"}, {"color": "#00D4FF", "dashes": false, "from": "SHRIRAMFIN", "label": "Total Revenue", "title": "VALUE_AT | Total Revenue: \u20b971.12 Billion (2026-03-31)", "to": "Total Revenue", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "SHRIRAMFIN", "label": "Net Income", "title": "VALUE_AT | Net Income: \u20b930.21 Billion (2026-03-31)", "to": "Net Income", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "SHRIRAMFIN", "label": "Net Debt", "title": "VALUE_AT | Net Debt: \u20b91.73 Trillion (2026-03-31)", "to": "Net Debt", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "SHRIRAMFIN", "label": "Total Assets", "title": "VALUE_AT | Total Assets: \u20b93.21 Trillion (2026-03-31)", "to": "Total Assets", "width": 1.5}, {"from": "SHRIRAMFIN", "label": "HELD_BY_INSIDERS", "title": "HELD_BY_INSIDERS", "to": "SHRIRAMFIN \u2013 Insider Holding"}, {"from": "SHRIRAMFIN", "label": "HELD_BY_INSTITUTIONS", "title": "HELD_BY_INSTITUTIONS", "to": "SHRIRAMFIN \u2013 Institutional Holding"}, {"from": "Mr. Parag  Sharma", "label": "LEADS", "title": "LEADS", "to": "SHRIRAMFIN"}, {"from": "SUNPHARMA", "label": "IN_SECTOR", "title": "IN_SECTOR", "to": "Healthcare"}, {"from": "SUNPHARMA", "label": "IN_INDUSTRY", "title": "IN_INDUSTRY", "to": "Drug Manufacturers - Specialty \u0026 Generic"}, {"color": "#00D4FF", "dashes": false, "from": "SUNPHARMA", "label": "Total Revenue", "title": "VALUE_AT | Total Revenue: \u20b9154.69 Billion (2025-12-31)", "to": "Total Revenue", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "SUNPHARMA", "label": "Net Income", "title": "VALUE_AT | Net Income: \u20b933.69 Billion (2025-12-31)", "to": "Net Income", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "SUNPHARMA", "label": "Total Assets", "title": "VALUE_AT | Total Assets: \u20b9921.01 Billion (2025-03-31)", "to": "Total Assets", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "SUNPHARMA", "label": "Gross Profit", "title": "VALUE_AT | Gross Profit: \u20b9125.24 Billion (2025-12-31)", "to": "Gross Profit", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "SUNPHARMA", "label": "Operating Income", "title": "VALUE_AT | Operating Income: \u20b95.79 Billion (2025-12-31)", "to": "Operating Income", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "SUNPHARMA", "label": "EBITDA", "title": "VALUE_AT | EBITDA: \u20b955.27 Billion (2025-12-31)", "to": "EBITDA", "width": 1.5}, {"from": "SUNPHARMA", "label": "HELD_BY_INSIDERS", "title": "HELD_BY_INSIDERS", "to": "SUNPHARMA \u2013 Insider Holding"}, {"from": "SUNPHARMA", "label": "HELD_BY_INSTITUTIONS", "title": "HELD_BY_INSTITUTIONS", "to": "SUNPHARMA \u2013 Institutional Holding"}, {"from": "Mr. Kirti Wardhaman Ganorkar", "label": "LEADS", "title": "LEADS", "to": "SUNPHARMA"}, {"from": "TATACONSUM", "label": "IN_SECTOR", "title": "IN_SECTOR", "to": "Consumer Defensive"}, {"from": "TATACONSUM", "label": "IN_INDUSTRY", "title": "IN_INDUSTRY", "to": "Packaged Foods"}, {"color": "#00D4FF", "dashes": false, "from": "TATACONSUM", "label": "Total Revenue", "title": "VALUE_AT | Total Revenue: \u20b951.12 Billion (2025-12-31)", "to": "Total Revenue", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "TATACONSUM", "label": "Net Income", "title": "VALUE_AT | Net Income: \u20b93.85 Billion (2025-12-31)", "to": "Net Income", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "TATACONSUM", "label": "Net Debt", "title": "VALUE_AT | Net Debt: \u20b94.40 Billion (2024-09-30)", "to": "Net Debt", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "TATACONSUM", "label": "Total Assets", "title": "VALUE_AT | Total Assets: \u20b9319.78 Billion (2025-03-31)", "to": "Total Assets", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "TATACONSUM", "label": "Gross Profit", "title": "VALUE_AT | Gross Profit: \u20b921.87 Billion (2025-12-31)", "to": "Gross Profit", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "TATACONSUM", "label": "Operating Income", "title": "VALUE_AT | Operating Income: \u20b933.01 Crore (2025-12-31)", "to": "Operating Income", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "TATACONSUM", "label": "EBITDA", "title": "VALUE_AT | EBITDA: \u20b97.54 Billion (2025-12-31)", "to": "EBITDA", "width": 1.5}, {"from": "TATACONSUM", "label": "HELD_BY_INSIDERS", "title": "HELD_BY_INSIDERS", "to": "TATACONSUM \u2013 Insider Holding"}, {"from": "TATACONSUM", "label": "HELD_BY_INSTITUTIONS", "title": "HELD_BY_INSTITUTIONS", "to": "TATACONSUM \u2013 Institutional Holding"}, {"from": "Mr. Sunil Alaric D\u0027Souza", "label": "LEADS", "title": "LEADS", "to": "TATACONSUM"}, {"from": "TATASTEEL", "label": "IN_SECTOR", "title": "IN_SECTOR", "to": "Basic Materials"}, {"from": "TATASTEEL", "label": "IN_INDUSTRY", "title": "IN_INDUSTRY", "to": "Steel"}, {"color": "#00D4FF", "dashes": false, "from": "TATASTEEL", "label": "Total Revenue", "title": "VALUE_AT | Total Revenue: \u20b9566.46 Billion (2025-12-31)", "to": "Total Revenue", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "TATASTEEL", "label": "Net Income", "title": "VALUE_AT | Net Income: \u20b926.89 Billion (2025-12-31)", "to": "Net Income", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "TATASTEEL", "label": "Net Debt", "title": "VALUE_AT | Net Debt: \u20b9828.49 Billion (2025-09-30)", "to": "Net Debt", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "TATASTEEL", "label": "Total Assets", "title": "VALUE_AT | Total Assets: \u20b92.86 Trillion (2025-09-30)", "to": "Total Assets", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "TATASTEEL", "label": "Gross Profit", "title": "VALUE_AT | Gross Profit: \u20b9342.04 Billion (2025-12-31)", "to": "Gross Profit", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "TATASTEEL", "label": "Operating Income", "title": "VALUE_AT | Operating Income: \u20b95.01 Billion (2025-12-31)", "to": "Operating Income", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "TATASTEEL", "label": "EBITDA", "title": "VALUE_AT | EBITDA: \u20b988.05 Billion (2025-12-31)", "to": "EBITDA", "width": 1.5}, {"from": "TATASTEEL", "label": "HELD_BY_INSIDERS", "title": "HELD_BY_INSIDERS", "to": "TATASTEEL \u2013 Insider Holding"}, {"from": "TATASTEEL", "label": "HELD_BY_INSTITUTIONS", "title": "HELD_BY_INSTITUTIONS", "to": "TATASTEEL \u2013 Institutional Holding"}, {"from": "Mr. Thachat Viswanath Narendran", "label": "LEADS", "title": "LEADS", "to": "TATASTEEL"}, {"from": "TCS", "label": "IN_SECTOR", "title": "IN_SECTOR", "to": "Technology"}, {"from": "TCS", "label": "IN_INDUSTRY", "title": "IN_INDUSTRY", "to": "Information Technology Services"}, {"color": "#00D4FF", "dashes": false, "from": "TCS", "label": "Total Revenue", "title": "VALUE_AT | Total Revenue: \u20b9706.98 Billion (2026-03-31)", "to": "Total Revenue", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "TCS", "label": "Net Income", "title": "VALUE_AT | Net Income: \u20b9137.18 Billion (2026-03-31)", "to": "Net Income", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "TCS", "label": "Total Assets", "title": "VALUE_AT | Total Assets: \u20b91.82 Trillion (2026-03-31)", "to": "Total Assets", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "TCS", "label": "Gross Profit", "title": "VALUE_AT | Gross Profit: \u20b9291.11 Billion (2026-03-31)", "to": "Gross Profit", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "TCS", "label": "Operating Income", "title": "VALUE_AT | Operating Income: \u20b97.57 Billion (2026-03-31)", "to": "Operating Income", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "TCS", "label": "EBITDA", "title": "VALUE_AT | EBITDA: \u20b9200.33 Billion (2026-03-31)", "to": "EBITDA", "width": 1.5}, {"from": "TCS", "label": "HELD_BY_INSIDERS", "title": "HELD_BY_INSIDERS", "to": "TCS \u2013 Insider Holding"}, {"from": "TCS", "label": "HELD_BY_INSTITUTIONS", "title": "HELD_BY_INSTITUTIONS", "to": "TCS \u2013 Institutional Holding"}, {"from": "Mr. K.  Krithivasan B.E, M.Tech.", "label": "LEADS", "title": "LEADS", "to": "TCS"}, {"from": "TECHM", "label": "IN_SECTOR", "title": "IN_SECTOR", "to": "Technology"}, {"from": "TECHM", "label": "IN_INDUSTRY", "title": "IN_INDUSTRY", "to": "Information Technology Services"}, {"color": "#00D4FF", "dashes": false, "from": "TECHM", "label": "Total Revenue", "title": "VALUE_AT | Total Revenue: \u20b9150.76 Billion (2026-03-31)", "to": "Total Revenue", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "TECHM", "label": "Net Income", "title": "VALUE_AT | Net Income: \u20b913.54 Billion (2026-03-31)", "to": "Net Income", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "TECHM", "label": "Total Assets", "title": "VALUE_AT | Total Assets: \u20b9493.69 Billion (2026-03-31)", "to": "Total Assets", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "TECHM", "label": "Gross Profit", "title": "VALUE_AT | Gross Profit: \u20b954.85 Billion (2026-03-31)", "to": "Gross Profit", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "TECHM", "label": "Operating Income", "title": "VALUE_AT | Operating Income: \u20b9-2.05 Billion (2026-03-31)", "to": "Operating Income", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "TECHM", "label": "EBITDA", "title": "VALUE_AT | EBITDA: \u20b923.61 Billion (2026-03-31)", "to": "EBITDA", "width": 1.5}, {"from": "TECHM", "label": "HELD_BY_INSIDERS", "title": "HELD_BY_INSIDERS", "to": "TECHM \u2013 Insider Holding"}, {"from": "TECHM", "label": "HELD_BY_INSTITUTIONS", "title": "HELD_BY_INSTITUTIONS", "to": "TECHM \u2013 Institutional Holding"}, {"from": "Mr. Mohit  Joshi", "label": "LEADS", "title": "LEADS", "to": "TECHM"}, {"from": "TITAN", "label": "IN_SECTOR", "title": "IN_SECTOR", "to": "Consumer Cyclical"}, {"from": "TITAN", "label": "IN_INDUSTRY", "title": "IN_INDUSTRY", "to": "Luxury Goods"}, {"color": "#00D4FF", "dashes": false, "from": "TITAN", "label": "Total Revenue", "title": "VALUE_AT | Total Revenue: \u20b9249.15 Billion (2025-12-31)", "to": "Total Revenue", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "TITAN", "label": "Net Income", "title": "VALUE_AT | Net Income: \u20b916.84 Billion (2025-12-31)", "to": "Net Income", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "TITAN", "label": "Net Debt", "title": "VALUE_AT | Net Debt: \u20b9176.89 Billion (2025-03-31)", "to": "Net Debt", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "TITAN", "label": "Total Assets", "title": "VALUE_AT | Total Assets: \u20b9406.47 Billion (2025-03-31)", "to": "Total Assets", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "TITAN", "label": "Gross Profit", "title": "VALUE_AT | Gross Profit: \u20b945.28 Billion (2025-12-31)", "to": "Gross Profit", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "TITAN", "label": "Operating Income", "title": "VALUE_AT | Operating Income: \u20b91.51 Billion (2025-12-31)", "to": "Operating Income", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "TITAN", "label": "EBITDA", "title": "VALUE_AT | EBITDA: \u20b928.64 Billion (2025-12-31)", "to": "EBITDA", "width": 1.5}, {"from": "TITAN", "label": "HELD_BY_INSIDERS", "title": "HELD_BY_INSIDERS", "to": "TITAN \u2013 Insider Holding"}, {"from": "TITAN", "label": "HELD_BY_INSTITUTIONS", "title": "HELD_BY_INSTITUTIONS", "to": "TITAN \u2013 Institutional Holding"}, {"from": "Mr. Ajoy  Chawla B.E., PGDM", "label": "LEADS", "title": "LEADS", "to": "TITAN"}, {"from": "TMPV", "label": "IN_SECTOR", "title": "IN_SECTOR", "to": "Consumer Cyclical"}, {"from": "TMPV", "label": "IN_INDUSTRY", "title": "IN_INDUSTRY", "to": "Auto Manufacturers"}, {"color": "#00D4FF", "dashes": false, "from": "TMPV", "label": "Total Revenue", "title": "VALUE_AT | Total Revenue: \u20b9696.05 Billion (2025-12-31)", "to": "Total Revenue", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "TMPV", "label": "Net Income", "title": "VALUE_AT | Net Income: \u20b9-34.86 Billion (2025-12-31)", "to": "Net Income", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "TMPV", "label": "Net Debt", "title": "VALUE_AT | Net Debt: \u20b9350.77 Billion (2025-09-30)", "to": "Net Debt", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "TMPV", "label": "Total Assets", "title": "VALUE_AT | Total Assets: \u20b93.44 Trillion (2025-09-30)", "to": "Total Assets", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "TMPV", "label": "Gross Profit", "title": "VALUE_AT | Gross Profit: \u20b9257.82 Billion (2025-12-31)", "to": "Gross Profit", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "TMPV", "label": "Operating Income", "title": "VALUE_AT | Operating Income: \u20b993.08 Billion (2025-12-31)", "to": "Operating Income", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "TMPV", "label": "EBITDA", "title": "VALUE_AT | EBITDA: \u20b925.15 Billion (2025-12-31)", "to": "EBITDA", "width": 1.5}, {"from": "TMPV", "label": "HELD_BY_INSIDERS", "title": "HELD_BY_INSIDERS", "to": "TMPV \u2013 Insider Holding"}, {"from": "TMPV", "label": "HELD_BY_INSTITUTIONS", "title": "HELD_BY_INSTITUTIONS", "to": "TMPV \u2013 Institutional Holding"}, {"from": "Mr. Shailesh  Chandra", "label": "LEADS", "title": "LEADS", "to": "TMPV"}, {"from": "TRENT", "label": "IN_SECTOR", "title": "IN_SECTOR", "to": "Consumer Cyclical"}, {"from": "TRENT", "label": "IN_INDUSTRY", "title": "IN_INDUSTRY", "to": "Apparel Retail"}, {"color": "#00D4FF", "dashes": false, "from": "TRENT", "label": "Total Revenue", "title": "VALUE_AT | Total Revenue: \u20b950.28 Billion (2026-03-31)", "to": "Total Revenue", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "TRENT", "label": "Net Income", "title": "VALUE_AT | Net Income: \u20b94.00 Billion (2026-03-31)", "to": "Net Income", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "TRENT", "label": "Net Debt", "title": "VALUE_AT | Net Debt: \u20b92.19 Billion (2026-03-31)", "to": "Net Debt", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "TRENT", "label": "Total Assets", "title": "VALUE_AT | Total Assets: \u20b9117.29 Billion (2026-03-31)", "to": "Total Assets", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "TRENT", "label": "Gross Profit", "title": "VALUE_AT | Gross Profit: \u20b922.06 Billion (2026-03-31)", "to": "Gross Profit", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "TRENT", "label": "Operating Income", "title": "VALUE_AT | Operating Income: \u20b927.91 Crore (2026-03-31)", "to": "Operating Income", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "TRENT", "label": "EBITDA", "title": "VALUE_AT | EBITDA: \u20b99.39 Billion (2026-03-31)", "to": "EBITDA", "width": 1.5}, {"from": "TRENT", "label": "HELD_BY_INSIDERS", "title": "HELD_BY_INSIDERS", "to": "TRENT \u2013 Insider Holding"}, {"from": "TRENT", "label": "HELD_BY_INSTITUTIONS", "title": "HELD_BY_INSTITUTIONS", "to": "TRENT \u2013 Institutional Holding"}, {"from": "Mr. Venkatesalu  Palaniswamy", "label": "LEADS", "title": "LEADS", "to": "TRENT"}, {"from": "ULTRACEMCO", "label": "IN_SECTOR", "title": "IN_SECTOR", "to": "Basic Materials"}, {"from": "ULTRACEMCO", "label": "IN_INDUSTRY", "title": "IN_INDUSTRY", "to": "Building Materials"}, {"color": "#00D4FF", "dashes": false, "from": "ULTRACEMCO", "label": "Total Revenue", "title": "VALUE_AT | Total Revenue: \u20b9257.99 Billion (2026-03-31)", "to": "Total Revenue", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "ULTRACEMCO", "label": "Net Income", "title": "VALUE_AT | Net Income: \u20b929.83 Billion (2026-03-31)", "to": "Net Income", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "ULTRACEMCO", "label": "Net Debt", "title": "VALUE_AT | Net Debt: \u20b9224.26 Billion (2026-03-31)", "to": "Net Debt", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "ULTRACEMCO", "label": "Total Assets", "title": "VALUE_AT | Total Assets: \u20b91.41 Trillion (2026-03-31)", "to": "Total Assets", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "ULTRACEMCO", "label": "Gross Profit", "title": "VALUE_AT | Gross Profit: \u20b9207.24 Billion (2026-03-31)", "to": "Gross Profit", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "ULTRACEMCO", "label": "Operating Income", "title": "VALUE_AT | Operating Income: \u20b987.56 Crore (2026-03-31)", "to": "Operating Income", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "ULTRACEMCO", "label": "EBITDA", "title": "VALUE_AT | EBITDA: \u20b956.87 Billion (2026-03-31)", "to": "EBITDA", "width": 1.5}, {"from": "ULTRACEMCO", "label": "HELD_BY_INSIDERS", "title": "HELD_BY_INSIDERS", "to": "ULTRACEMCO \u2013 Insider Holding"}, {"from": "ULTRACEMCO", "label": "HELD_BY_INSTITUTIONS", "title": "HELD_BY_INSTITUTIONS", "to": "ULTRACEMCO \u2013 Institutional Holding"}, {"from": "Mr. Kailash Chandra Jhanwar B.Com, C.S (Inter), FCA", "label": "LEADS", "title": "LEADS", "to": "ULTRACEMCO"}, {"from": "WIPRO", "label": "IN_SECTOR", "title": "IN_SECTOR", "to": "Technology"}, {"from": "WIPRO", "label": "IN_INDUSTRY", "title": "IN_INDUSTRY", "to": "Information Technology Services"}, {"color": "#00D4FF", "dashes": false, "from": "WIPRO", "label": "Total Revenue", "title": "VALUE_AT | Total Revenue: \u20b9235.56 Billion (2025-12-31)", "to": "Total Revenue", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "WIPRO", "label": "Net Income", "title": "VALUE_AT | Net Income: \u20b931.19 Billion (2025-12-31)", "to": "Net Income", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "WIPRO", "label": "Net Debt", "title": "VALUE_AT | Net Debt: \u20b944.15 Billion (2025-12-31)", "to": "Net Debt", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "WIPRO", "label": "Total Assets", "title": "VALUE_AT | Total Assets: \u20b91.41 Trillion (2025-12-31)", "to": "Total Assets", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "WIPRO", "label": "Gross Profit", "title": "VALUE_AT | Gross Profit: \u20b968.36 Billion (2025-12-31)", "to": "Gross Profit", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "WIPRO", "label": "Operating Income", "title": "VALUE_AT | Operating Income: \u20b935.73 Billion (2025-12-31)", "to": "Operating Income", "width": 1.5}, {"color": "#00D4FF", "dashes": false, "from": "WIPRO", "label": "EBITDA", "title": "VALUE_AT | EBITDA: \u20b948.09 Billion (2025-12-31)", "to": "EBITDA", "width": 1.5}, {"from": "WIPRO", "label": "HELD_BY_INSIDERS", "title": "HELD_BY_INSIDERS", "to": "WIPRO \u2013 Insider Holding"}, {"from": "WIPRO", "label": "HELD_BY_INSTITUTIONS", "title": "HELD_BY_INSTITUTIONS", "to": "WIPRO \u2013 Institutional Holding"}, {"from": "Mr. Srinivas  Pallia", "label": "LEADS", "title": "LEADS", "to": "WIPRO"}]);
+
+                  nodeColors = {};
+                  allNodes = nodes.get({ returnType: "Object" });
+                  for (nodeId in allNodes) {
+                    nodeColors[nodeId] = allNodes[nodeId].color;
+                  }
+                  allEdges = edges.get({ returnType: "Object" });
+                  // adding nodes and edges to the graph
+                  data = {nodes: nodes, edges: edges};
+
+                  var options = {"physics": {"forceAtlas2Based": {"gravitationalConstant": -150, "centralGravity": 0.01, "springLength": 120}, "solver": "forceAtlas2Based", "stabilization": {"enabled": true, "iterations": 1200}}, "edges": {"color": {"color": "#555555", "highlight": "#FF3131", "hover": "#FF9900", "inherit": false}, "width": 1, "selectionWidth": 3, "smooth": {"type": "dynamic"}, "arrows": {"to": {"enabled": true, "scaleFactor": 0.5}}, "font": {"size": 10, "color": "#aaaaaa", "strokeWidth": 0}}, "interaction": {"hover": true, "hoverConnectedEdges": true, "selectConnectedEdges": true, "tooltipDelay": 80, "navigationButtons": true}};
+
+                  
+
+
+                  
+
+                  network = new vis.Network(container, data, options);
+
+                  
+
+                  
+                    network.on("selectNode", neighbourhoodHighlight);
+                  
+
+                  
+
+
+                  
+                      network.on("stabilizationProgress", function(params) {
+                          document.getElementById('loadingBar').removeAttribute("style");
+                          var maxWidth = 496;
+                          var minWidth = 20;
+                          var widthFactor = params.iterations/params.total;
+                          var width = Math.max(minWidth,maxWidth * widthFactor);
+                          document.getElementById('bar').style.width = width + 'px';
+                          document.getElementById('text').innerHTML = Math.round(widthFactor*100) + '%';
+                      });
+                      network.once("stabilizationIterationsDone", function() {
+                          document.getElementById('text').innerHTML = '100%';
+                          document.getElementById('bar').style.width = '496px';
+                          document.getElementById('loadingBar').style.opacity = 0;
+                          // really clean the dom element
+                          setTimeout(function () {document.getElementById('loadingBar').style.display = 'none';}, 500);
+                      });
+                  
+
+                  return network;
+
+              }
+              drawGraph();
+        </script>
+    
+    <script>
+    window.addEventListener('load', function () {
+      setTimeout(function () {
+        var sel = document.querySelector('.form-select') || document.getElementById('select-node');
+        if (!sel) return;
+        var companyIds = nodes.get({ filter: function(n){ return n.group === 'Company'; } }).map(function(n){ return n.id; });
+        Array.from(sel.options).forEach(function(opt) {
+          if (opt.value && opt.value !== 'Select a Node by ID' && !companyIds.includes(opt.value)) {
+            opt.remove();
+          }
+        });
+      }, 900);
+    });
+    </script>
+    </body>
+</html>

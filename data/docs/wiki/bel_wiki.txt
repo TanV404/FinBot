@@ -1,0 +1,156 @@
+Title: Bharat Electronics
+URL: https://en.wikipedia.org/wiki/Bharat_Electronics
+
+Bharat Electronics Limited (BEL) is an Indian public sector aerospace and defence electronics company, headquartered in Bengaluru. It primarily manufactures advanced electronic products for ground and aerospace applications. BEL is one of sixteen PSUs under the administration of the Ministry of Defence of India. It has been granted Navratna status by the Government of India.
+
+## History
+Bharat Electronics Limited was founded in Bangalore, Karnataka, India in 1954.
+Starting with the manufacture of a few communication equipment in 1956, BEL started manufacturing receiving valves in 1961, germanium semiconductors in 1962, and radio transmitters for All India Radio in 1964 with help from the Soviet Union.
+
+In 1966, BEL set up a radar manufacturing facility for the army and in-house R&D. In 1967, BEL began manufacturing transmitting tubes, silicon devices, and integrated circuits. The PCB manufacturing facility was established in 1968.
+In 1970, BEL started making black & white TV picture tubes, X-ray tubes, and microwave tubes. In 1971, BEL set up facilities for the manufacture of integrated circuits and hybrid microcircuits. In 1972, BEL established manufacturing facilities for TV transmitters for Doordarshan. In 1973, BEL began manufacturing frigate radars for the navy.
+Under the government's policy of decentralisation and due to strategic reasons, BEL set up new units at different locations across the country. The second unit of BEL was set up at Ghaziabad in 1974 to manufacture radars and Tropo communication equipment for the Indian Air Force. The third unit was established at Pune in 1979 to manufacture image converters and image intensifier tubes.
+
+In 1980, the first overseas office of BEL was set up in New York for the procurement of components and materials.
+In 1981, a manufacturing facility for magnesium manganese dioxide batteries was set up at Pune. The Space Electronic Division was set up at Bangalore to support the satellite programmes in 1982. That year, BEL achieved a turnover of ₹1 billion (US$21 million).
+In 1983, the Andhra Scientific Company (ASCO) was taken over by BEL and converted to its fourth manufacturing unit at Machilipatnam.
+In 1985, the fifth unit was set up in Chennai for the supply of tank electronics, with proximity to Heavy Vehicles Factory, Chennai of the Ordnance Factory Board. The sixth unit was set up at Panchkula the same year to manufacture military communication equipment.
+In 1986, BEL set up three units. Its seventh unit was set up at Kotdwara to manufacture switching equipment, the eighth unit to manufacture TV glass shells at Taloja (Navi Mumbai), and the ninth unit at Hyderabad to manufacture electronic warfare equipment.
+In 1987, a separate Naval Equipment Division was set up at Bangalore to give greater focus to naval projects. The first Central Research Laboratory was established at Bangalore in 1988 to focus on futuristic research and development.
+In 1989, BEL started manufacturing telecom switching and transmission systems, and also set up the Mass Manufacturing Facility in Bangalore and the manufactured of the first batch of 75,000 electronic voting machines.
+The agreement for setting up BEL's first joint venture company, BE DELFT, with M/s Delft of Holland, was signed in 1990. This later became a subsidiary of BEL with the exit of the foreign partner and has been renamed BEL Optronic Devices Limited.
+The second Central Research Laboratory was established at Ghaziabad in 1992. The first disinvestment (20%) and listing of the company's shares in the Bangalore and Mumbai Stock Exchanges took place in same year-1992.
+
+In 1996, BEL achieved ₹10 billion (US$215 million) turnover.
+In 1997, GE BEL, the second joint venture company with M/s GE, USA, was formed as also the third JVC with M/s Multitone, UK, BEL Multitone. The same year, the US imposed supply restrictions on BEL.
+In 1998, BEL set up its second overseas office at Singapore to source components from South East Asia. In the same year US and Europe imposed sanctions on BEL. The company was able to overcome the effects of the sanctions and kept up the promised deliveries to customers.
+In 2000, BEL reorganised its Bangalore unit into six strategic business units (SBUs). The R&D groups in Bangalore were also restructured into Specific Core Groups and Product Development Groups. The same year, BEL shares were listed in the National Stock Exchange.
+In 2002, BEL became the first defence PSU to achieve operational Mini Ratna Category I status. In 2003, the company's turnover crossed the ₹25 billion mark (US$540 million). In 2005, BEL had a turnover of ₹32.20 billion (US$695 million). BEL achieved a turnover of ₹35.60 billion (US$767 million) in 2005–06.
+On 12 May 2010, Boeing announced that it received the Data Link II communications technology for the Indian Navy's P-8I from Bharat Electronics Limited (BEL) in April, one month ahead of schedule. BEL delivered the Indian-designed communications system that would enable the exchange of tactical data and messages between Indian Navy aircraft, ships and shore establishments. Boeing installed the system during final assembly of P-8I.
+In 2011, Bharat Electronics Limited (BEL) showcased its entire range of C4ISR capabilities including network centric warfare technologies developed in-house at Aero India 2011. These include command and control system, air space management multi sensor tracking, situation simulator and tactical algorithm for air defence applications; battlefield management system and an all-weather 24/7 coastal surveillance system.
+In 2019, Bharat Electronics Limited (BEL) was awarded the tender to implement the project "Integrated Command and Control Centre" for Gangtok Smart City under Smart Cities Mission initiated by the Ministry of Housing and Urban Affairs, Government of India.
+
+In addition, new products and technologies including software defined radios, next generation bulk encryptor and high data tactical radio were also on show. Airborne products displayed included radar finger printing system, data link, digital flight control computer and identification friend or foe. Also on display were the complete range of optoelectronic equipment, including night vision devices, digital handheld compass and an advanced land navigation system.
+BEL is the lead integrator of Akash, the Indian-made guided missile air defence weapon system. Another major system is the Swathi Weapon Locating Radar, a state-of-the-art passive, phased array radar which has been delivered to the Indian Army.
+
+### Collaboration
+Bharat Electronics set up a joint venture with General Electric (GE) USA, for manufacturing high voltage tanks and detector modules for computed tomography (CT) scan systems and advanced level of X-ray tubes. The company joined with Bharat Heavy Electricals Limited (BHEL) to set up a joint venture to make solar photovoltaic components. BEL also signed a memorandum of understanding with Chennai based Indus Teqsite, for the design and development of digital subsystems for its equipment, test systems for its radars, avionics and electronic warfare, and another with the French company Thales International to set up a joint venture for civilian and defence radar. BEL has signed a memorandum of understanding with Textron Systems to provide nicro-observer unattended ground sensor (UGS) systems to the Indian security agencies.
+In 2022, BEL was looking at putting up a fab (semiconductor chip) factory along with Hindustan Aeronautics (HAL).
+On 23 July 2024, BEL signed a tripartite agreement with Rosoboronexport, Russia, and MSK Business Solutions Pvt. Ltd. for  licensed production and supply of some select indigenised ammunition. The ammunition includes 30 mm ammunition (HEI & HET), 40 mm (VOG-25) and 30 mm (VOG-30 D) grenade ammunition.
+A memorandum of understanding was signed on September 30, 2024, between Bharat Electronics and the Space Applications Centre, pertaining to collaboration, indigenization, and infrastructure development for the production of space-grade travelling wave tube amplifiers.
+
+### BEL-JSR Dynamics collaboration
+On 20 February 2019, during Aero India 2019, Bharat Electronics signed a memorandum of understanding (MoU) with JSR Dynamics for the development of Glide Weapons and Light Weight Cruise missiles. Later, in March 2019, BEL-JSR unveiled prototypes of a family of three low cost, state-of-the-art, air-launched long-range precision-guided weapons and lightweight cruise missiles, designated Waghnak, Khagantak, and Vel. While the electronics and guidance subsystems are to be supplied with BEL, the body and control systems will be supplied to JSW Dynamics.
+
+The Khagantak-225-LW, also designated as the Long Range Glide Bomb (LRGB), is in testing phase as of April 2025. It has been integrated with the Su-30MKI and can be equipped with the Mk 80 series bombs (Mk 81 to 84). Reportedly, the weapon would be equipped with the entire fleet of the Su-30MKI under the Super Sukhoi upgrade programme.
+
+## Products
+BEL designs, develops and manufactures a range of products in the following fields:
+
+Electronic voting machines
+Voter-verified paper audit trail
+Traffic signals
+Radars
+Swathi Weapon Locating Radar
+BEL Battle Field Surveillance Radar
+Indian Doppler Radar (INDRA)
+Samyukta Electronic Warfare System
+Central acquisition radar (3D-CAR)
+Reporter Radar
+Low-Level Transportable Radar Ashwini (18 units ordered by the Indian Air Force on 12 March 2025 at a cost of ₹2,096 crore (US$220 million))
+Telecommunications
+Sound and vision broadcasting
+Opto-electronics
+Information technology
+Semiconductors
+Missiles
+Akash (missile) in partnership with the Ordnance Factory Board
+Sonars
+Hull Mounted Sonar Array
+HUMSA (First Generation) – INS Mumbai, Rajput-class, Godavari-class, Brahmaputra-class, Talwar-class (Batch 1 & Batch 2)
+HUMSA-UG (Second Generation) – Upgraded variant
+HUMSA-NG (Third Generation) – Kolkata-class, Visakhapatnam-class, Shivalik-class, Nilgiri-class, Talwar-class (Batch 3 & Batch 4), Kamorta-class
+HUMSA-NG Mk 2 (Fourth Generation)
+Nagin active towed array sonar – Kolkata-class, Visakhapatnam-class
+USHUS (Integrated Submarine Active/Passive Sonar)
+Panchendriya (Submarine Active/Passive Sonar)
+Composite Communication System (CCS)
+Fire-control system
+Lynx-U2 (for OTO Melara 76 mm)
+Electronic warfare systems
+F-INSAS in partnership with the Ordnance Factory Board
+Simulators
+Tank electronics
+Combined day sight for OFB Arjun MBT
+Defence communications
+Data Link II communications system for the Indian Navy's P-8I
+Combat management system for the Indian Navy
+Solar power generation systems
+Naval systems
+C4I systems for the Air Force
+A low-cost tablet PC being used in the Socio-economic Caste Census 2011
+Biometrics Capturing for Nation Population Register
+Encryptors for the Ministry of Home Affairs
+IFF (Identify Friend or Foe) secondary radar
+SDR and IP radio in multiple frequency bands
+Some products are manufactured by Bharat Electronics Ltd. with the help of ToT (Transfer of Technology).
+
+## Locations
+Bharat Electronics Limited has its units in the following cities in India.
+
+Bangalore (corporate head office and factory), Karnataka
+Chennai, Tamil Nadu
+Panchkula (Haryana)
+Kotdwar (Uttarakhand)
+Ghaziabad (Uttar Pradesh)
+Pune, Maharashtra
+Hyderabad, Telangana
+Navi Mumbai, Maharashtra
+Machilipatnam, Andhra Pradesh
+Foreign offices
+New York City
+Singapore
+Hanoi, Vietnam
+Yangon, Myanmar
+Muscat, Oman
+Colombo, Sri Lanka
+Regional offices
+New Delhi
+Mumbai
+Kolkata
+Visakhapatnam
+
+## Subsidiary
+
+
+### BEL Optronic Devices
+BEL Optronic Devices Ltd. is a subsidiary company of BEL. It was founded in 1990 to conduct research, development and manufacture of image intensifier tubes and associated high voltage power supply units for use in military, security and commercial systems. The company is headquartered in Pune and earned aggregated revenue of ₹516 million (US$5.5 million) during the fiscal year 2007.
+
+## Joint ventures
+
+
+### BEL Thales Limited
+BEL-Thales Systems Limited is a joint venture company (JVC) between Bharat Electronics Limited and Thales. Incorporated on 28 August 2014, the company is located in the BEL Industrial Estate, Jalahalli, Bengaluru.
+
+### GE-BE Pvt Limited
+GE-BE Pvt Limited was set up in 1997 as a joint venture between Bharat Electronics Limited and General Electric Medical System. The facility based at Whitefield, Bangalore, manufactures X-ray tubes for RAD & F and CT systems, as well as components such as high voltage tanks and detector modules for CT systems. The products are exported worldwide and meet the safety and regulatory standards specified by FDA, CE, MHW, AERB, and the facility has been accredited with ISO-9001; ISO-13485, and ISO-14001 certifications. GE-BEL also markets the conventional X-ray tubes made at the Pune unit of BEL. The turnover of GE-BEL during 2004–2005 was over ₹4.50 billion (US$97 million,) including an export of over ₹4.30 billion (US$92 million). The company has been recognised for its outstanding export performance since 1998 by the Export Promotion Councils.
+
+### BEL IAI AeroSystems
+In 2024, BEL and Israel Aerospace Industries formed a joint venture company named BEL IAI AeroSystems. According to BEL, the joint venture was formed to provide life cycle support, including technical and maintenance related support, for India's Medium Range Surface-to-Air Missile air defence systems.
+
+### BEL-Safran Electronics & Defense
+Bharat Electronics and Safran Electronics & Defense signed memorandum of understanding on February 11, 2025, to establish a joint venture for the production, customization, sales, and upkeep of Armement Air-Sol Modulaire in India.
+On 16 February 2026, BEL approved the Project HAMMER which includes the formation of the joint venture, a 50:50 equity Private Limited Company under the Companies Act 2013. The joint venture will operate a Centre of Excellence that will act as "technology and teaming partner for the manufacturing, supply, maintenance and repair of the Guidance Kit of the HAMMER weapon system". The JV will have a board of four directors two nominated by each BEL and SED. The primary users include the Indian Air Force and the Indian Navy. The partnership was one of the agenda during the bilateral meet between French president Emmanuel Macron and Indian prime minister Narendra Modi.
+
+## Ownership
+As of December 2023, Bharat Electronics Limited is primarily owned by the Government of India (51.14%), mutual funds and UTI (18.33%), foreign portfolio investors (17.78%), individual investors (6.76%) and insurance companies (3.63%).
+
+## Customer Co-ordination Cell
+Recently, BEL has set up a Customer Co-ordination Cell. The customers of BEL comprise members of the Army, Navy, Air Force, paramilitary, Coast Guard (India, Seychelles, Maldives, Sri Lanka), Police, Doordarshan, All India Radio, Department of Telecommunications and consumers of professional electronic components are allowed to register their complaints with the Customer Co-ordination Cell by phone, fax or the Internet.
+
+## References
+
+
+## External links
+Official website
+

@@ -1,0 +1,85 @@
+Title: Airtel India
+URL: https://en.wikipedia.org/wiki/Airtel_India
+
+Airtel India is an Indian telecommunications company that provides mobile network services, broadband, fixed-line, and digital TV (DTH) services in India and several other countries. It operates under its parent company, Bharti Airtel. Currently, Airtel provides 5G, 4G and 4G+ services all over India. Its 6G service is in the works. It is the second largest provider of mobile telephony and fixed telephony in India. 
+It is a direct subsidiary of Bharti Airtel. Its key subsidiaries are Bharti Hexacom, which provides telecom services only in Rajasthan and the Northeast region of India, and Bharti Telemedia which provides  Direct-to-Home (DTH) services. Additionally, it relies on Indus Towers for passive telecom infrastructure solutions, including telecom equipment and tower infrastructure. Currently offered services include fixed-line broadband, and voice services depending upon the country of operation. Airtel had also rolled out its VoLTE technology across all Indian telecom circles.
+Airtel is the first Indian telecom service provider to achieve Cisco Gold Certification. It also acts as a carrier for national and international long-distance communication services. The company has a submarine cable landing station at Chennai, with a connection to Singapore. Airtel was named India's second most valuable brand in the first ever Brandz ranking by Millward Brown and WPP plc in 2014.
+
+## Mobile services
+Airtel operates in all telecom circles of India.
+
+### 3G
+On 18 May 2010, the 3G spectrum auction was completed and Airtel paid the Government of India ₹123 billion (US$1.3 billion) for spectrum in 13 telecom circles of India: Delhi, Mumbai, Andhra Pradesh, Karnataka, Tamil Nadu, Uttar Pradesh (West), Rajasthan, West Bengal, Himachal Pradesh, Bihar, Assam, North East, and Jammu & Kashmir. Airtel also operates 3G services in Maharashtra & Goa, Kolkata, Gujarat and Punjab circles through an agreement with Vodafone. This gives Airtel a 3G presence in all 22 out of 22 circles in India. Airtel is fined by DoT 3.50 billion for not stopping offering 3G Services through Roaming Pacts outside its Licensed Zones in Seven Circles.
+On 20 September 2010, Bharti Airtel said that it had given contracts to Ericsson India, Nokia Siemens Networks (NSN) to set up infrastructure for providing 3G services in the country. These vendors would plan, design, deploy and maintain 3G–HSPA (third-generation, high-speed packet access) networks in 13 telecom circles where the company had won 3G licences. While Airtel awarded network contracts for seven 3G circles to Ericsson India, NSN would manage networks in three circles. Chinese telecom equipment vendor Huawei Technologies was introduced as the third partner for three circles.
+Airtel launched 3G services in Bangalore on 24 January 2011. On 27 January 2011, Airtel launched 3G in Chennai and Coimbatore in Tamil Nadu. On 27 July 2011, 3G services were launched in Kerala's 3 largest cities – Kochi, Kozhikode and Thiruvananthapuram.
+Airtel 3G services are available in 200 cities through its network and in 500 cities through intra-circle roaming arrangements with other operators. Airtel had about 5.4 million 3G customers of which 4 million are 3G data customers as of September 2012. Airtel has 3G licence in all 22 circles.
+In October 2017, Bharti Airtel announced its acquisition of Tata Docomo having roughly 40 million subscribers.
+In June 2019, Airtel closed their 3G network in Kolkata. In Kolkata users can only access 4G and 2G networks. As of April 2025, Airtel does not provide a 3G network and only 5G, 4G LTE, and 2G services are offered.
+
+### 4G
+On 19 May 2010, the broadband wireless access (BWA) or 4G spectrum auction in India ended. Airtel paid ₹33.1436 billion (US$350 million) for spectrum in 4 circles: Maharashtra and Goa, Karnataka, Punjab and Kolkata. The company was allocated 20 MHz of BWA spectrum in 2.3 GHz frequency band. Airtel's TD-LTE network is built and operated by ZTE in Kolkata and Punjab, Huawei in Karnataka, and Nokia Siemens Networks in Maharashtra and Goa. On 10 April 2012, Airtel launched 4G services through dongles and modems using TD-LTE technology in Kolkata, becoming the first company in India to offer 4G services. The Kolkata launch was followed by launches in Bangalore (7 May 2012), Pune (18 October 2012), and Chandigarh, Mohali and Panchkula (25 March 2013). Airtel obtained 4G licences and spectrum in the telecom circles of Delhi, Haryana, Kerala and Mumbai after acquiring Wireless Business Services Private Limited, a joint venture founded by Qualcomm, which had won BWA spectrum in those circles in the 4G spectrum auction.
+Airtel launched 4G services on mobile from February 2014. The first city to get the service was Bangalore. Airtel has started their 4G services in Karnal and Yamunanagar in Haryana on 16 June 2015. Airtel 4G trials has been started in Delhi from 18 June 2015. Airtel had 95,173,000 4G subscribers as of June 2019.
+As of June 2019, Airtel provides 4G coverage in all India in 22 circles. Airtel extended its 4G network to 15 km off India's coastline, following a request by the Indian Navy. Airtel started its 4G in Andaman and Nicobar on 15 January 2019. Airtel covered 96% population in Rajasthan till March 2019. Airtel's network now covers approximately 98% of the population in these geographies.
+
+#### VoLTE
+On 3 November 2016, The Economic Times reported that Airtel had awarded a ₹4.02 billion (US$60 million) contract to Nokia to implement Voice over LTE (VoLTE) technology on the operator's network nationwide. Airtel had previously awarded a smaller contract to Nokia for trial of VoLTE technology in select circles in early 2016. Airtel subscribers would be able to place VoLTE calls in areas covered by LTE. If LTE was not available in the area, the call will fall back to 3G or 2G.
+
+### 5G
+Airtel operates a 5G network running in NSA mode and runs on bands n78 and n258.
+Jan 2021 - Demonstrated live 5G network at Hyderabad, India.
+Feb 2021 - Announced partnership with Qualcomm to develop Open-RAN based 5G network.
+July 2021 - Airtel and Intel announce collaboration to accelerate 5G in India.
+August 2022 - Airtel signed agreement deal with Nokia, Samsung & Ericsson for 5G services.
+October 2022 - On 1 October 2022, Bharti Airtel launched 5G services in 8 cities in India.
+
+### Spectrum frequency holding summary
+Airtel India owns spectrum in 850 MHz, 900 MHz, 1800 MHz, 2100 MHz, 2300 MHz, 3500 MHz and 26 GHz bands across the country.
+
+### Project Leap
+On 30 November 2015, Airtel announced the launch of a network transformation programme called Project Leap. Under the programme, the company will invest ₹60,000 crores over the next 3 years to upgrade its network across India. Airtel will deploy over 160,000 base stations nationwide, and also expand its mobile broadband coverage to over 500,000 villages. Under Project Leap, Airtel will introduce several technologies such as small cells, carrier aggregation solutions, Wi-Fi hotspots, and several different spectrum bands to improve network coverage in indoor areas. The company will also deploy more than 5,50,000 km of domestic and international fibre, and upgrade its legacy networks and base stations over the three-year period.
+Airtel Broadband will also benefit from Project Leap. The ISP's maximum offered speed will rise from 16 Mbit/s in 2016 to 50 Mbit/s when after the programme is implemented.
+On 14 June 2016, Airtel launched the Open Network initiative under Project Leap. The Open Network service allows users to view Airtel's mobile network coverage and signal strength across India, in addition to network site deployment status. This was first launched on a trial basis in December 2015, before its official launch in June 2016.
+In February 2016, Airtel deployed LTE Advanced carrier aggregation technology in Kerala. Carrier aggregation combines the capacities of TD-LTE (2300 MHz spectrum band) and FD-LTE (1800) enabling better spectrum utilisation and efficiency. The network achieved data speeds of up to 135 Mbit/s.
+
+## Airtel Business
+Jan 2020 - Announced partnership with Google Cloud Platform to offer Google Workspace to SMBs in India.
+May 2020 - Announced 'Work@Home' solutions for corporate employees, which bundled collaboration tools including Google Meet, Cisco Webex and Zoom (software). Announced "High speed Airtel 4G Corporate Mi-Fi devices with complimentary G Suite pack".
+July 2020 - Partnered with Verizon Communications to launch BlueJeans in India.
+
+### Airtel IQ
+A cloud communications suite, which Airtel has announced in Oct 2020, that it will operate as a separate business division.
+
+### Nxtra Datacenter
+Nxtra Data Ltd, a subsidiary of Airtel, which operates data center services to corporate clients in the South Asian region. It currently operates 10 Tier-III Data centers across 7 locations in India.
+Aug 2020 - Announced strategic alliance with Amazon Web Services to offer AWS's services to SMBs in India.
+
+## Airtel Money
+Airtel has started a new mCommerce platform called Airtel Money in collaboration with Infosys and SmartTrust (now Giesecke & Devrient). The platform was launched on 5 April 2012, at Infosys' headquarters in Bangalore. Using Airtel Money, users can transfer money, pay bills and perform other financial transactions directly on the mobile phone.
+
+## Airtel Broadband
+
+
+### Xstream Fiber
+Airtel launched its Xstream Fiber service in October 2016. Airtel Xstream Fiber is available in 1,140 cities in India with speeds up to 1 Gbit/s. It offers other services like VoIP, OTT apps and TV channels.
+
+### IPTV
+Airtel Broadband launched its IPTV service in 2009. On 31 August 2016, the company shut down the service, and offered its 50,000 subscribers a free upgrade to Airtel Digital TV. The company stated that the move was part of its strategy to focus on a single television service.
+
+## Net neutrality debate
+In April 2015, Airtel launched a marketing platform called Airtel Zero, which allows application providers to pay for the data used by the consumers, enabling consumers to access specific mobile apps at zero data cost. Flipkart, a leading Indian e-commerce firm reportedly was to become the launch partner of "Airtel Zero". The issue triggered debate on net neutrality in India and following protests Flipkart pulled out of Airtel Zero.
+
+## See also
+Bharti Airtel
+Bharti Enterprises
+Airtel Payments Bank
+Wynk
+Telecommunications in India
+List of telecom companies in India
+List of mobile network operators
+
+## References
+
+
+## External links
+Official website
+

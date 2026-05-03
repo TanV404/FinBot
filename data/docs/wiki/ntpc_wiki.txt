@@ -1,0 +1,136 @@
+Title: NTPC Limited
+URL: https://en.wikipedia.org/wiki/NTPC_Limited
+
+NTPC Limited, formerly known as National Thermal Power Corporation, is an Indian central Public Sector Undertaking (PSU) owned by the Ministry of Power and the Government of India, which is engaged in the generation of electricity and other activities. The headquarters of the PSU are situated at New Delhi. NTPC's core function is the generation and distribution of electricity to State Electricity Boards in India. The body also undertakes consultancy and turnkey project contracts that involve engineering, project management, construction management, and operation and management of power plants.
+It is the largest power company in India, with an installed capacity of 80,154.50 MW. Although the company has approximately 16% of the total national capacity, it contributes to over 25% of total power generation due to its focus on operating its power plants at higher efficiency levels (approximately 80.2% against the national PLF rate of 64.5%). NTPC currently produces 25 billion units of electricity per month.
+NTPC Mining Ltd (NML) has mined about 100 MMT coal in 2023-2024 FY, NML has Pakri Barwadih, Chatti Bariatu and Kerandari Coal Mines in Jharkhand, Dulanga Coal Mine in Odisha and Talaipalli Coal Mine in Chhattisgarh.
+NTPC currently operates 55 power stations: 24 coal, seven combined cycle gas and liquid fuel, two hydro powered, one wind turbine, and 11 solar projects. Additionally, it has 9 coal and 1 gas station, owned by joint ventures or subsidiaries.
+It was founded by Government of India in 1975, which now holds 51.10% of its equity shares after divestment of its stake in 2004, 2010, 2013, 2014, 2016, and 2017. In May 2010, NTPC was conferred Maharatna status by the Union Government of India, one of only four companies to be awarded this status. It is ranked 433rd in the Forbes Global 2000 for 2023.
+
+## History
+
+
+### 1975–1994
+The company was founded on 7 November 1975 by India's former Prime Minister Indira Gandhi as National Thermal Power Corporation Private Limited. It started working on its first thermal power project in 1976 at Shaktinagar—named National Thermal Power Corporation Private Limited Singrauli—in Uttar Pradesh. In the same year, its name was changed to "National Thermal Power Corporation Limited". In 1983, NTPC began commercial operations and earned profits of INR 4.5 crores in FY 1982–83. By the end of 1985, it had achieved power generation capacity of 2000 MW.In 1986, it completed synchronisation of its first 500 MW unit at Singrauli. In 1988, it commissioned two 500 MW units, one each in Rihand and Ramagundam. In 1989, it started a consultancy division. In 1992, it acquired Feroze Gandhi Unchahar Thermal Power Station from Uttar Pradesh Rajya Vidyut Utpadan Nigam of Uttar Pradesh. By the end of 1994, its installed capacity crossed 15,000 MW.
+
+### 1995–2004
+In 1995, it took over the Talcher Thermal Power Station from Orissa State Electricity Board. In the year 1997, the Government of India conferred it with "Navratna" status. In that same year, it achieved a milestone of generating 100 billion units of electricity in a single year. In 1998, it commissioned its first Naptha-based plant at Kayamkulam with a capacity of 350 MW. In 1999, its plant in Dadri, which had the highest plant load factor (PLF) in India of 96%, was certified with ISO-14001. During 2000, it started construction of its first hydro-electric power project, with 800 MW capacity, in Himachal Pradesh.In 2002, it incorporated 3 subsidiary companies: NTPC Electric Supply Company Limited for forward integration by entering into the business of distribution and trading of power; NTPC Vidyut Vyapar Nigam Limited for meeting the expected rise in energy trading; and NTPC Hydro Limited to carry out the business of implementing and operating small and medium hydropower projects. Later in 2002, its installed capacity crossed 20,000 MW.
+NTPC got listed on BSE and NSE on 5 November 2004. Against the issue price of ₹62 per share, it closed the first day of listing with ₹75.55 per share. On the day of listing, it became the third largest company in India in terms of market capitalisation.
+
+### 2005–present
+In October 2005, the company's name was changed from National Thermal Power Corporation Limited to NTPC Limited. The primary reason for this change was the company's foray into hydro and nuclear based power generation along with backward integration of coal mining. In 2006, it entered into an agreement with the Government of Sri Lanka to set up two units of 250 MW each in Trincomalee in Sri Lanka. During 2008 and 2011, NTPC entered into joint ventures with BHEL, Bharat Forge, NHPC, Coal India, SAIL, NMDC, and NPCIL to expand its business of power generation. By the end of 2010, its installed capacity crossed 31,000 MW.
+The company in 2009 joined forces with other state enterprises Rashtriya Ispat Nigam, Steel Authority of India, Coal India, and National Minerals Development Corporation to invest in coal mining operations through a joint venture vehicle named International Coal Ventures Private Limited (ICVL). In July 2014, ICVL acquired a 65 percent stake in the Benga coal mine in Mozambique from the Rio Tinto Group. In December 2022, the market capitalisation of NTPC limited was ₹1,66,249.34 crore.
+
+## Operations
+NTPC operates from 70 locations in India, one location in Sri Lanka and two locations in Bangladesh. In India, it has eight regional headquarters (HQ):
+
+### Scheduling and generation dispatch
+The scheduling and dispatch of all the generating stations owned by National Thermal Power Corporation are done by respective regional load dispatch centers, which are the apex body to ensure integrated operation of the power system grid in the respective region. All these load dispatch centers come under Power System Operation Corporation Limited (POSOCO).
+
+## Subsidiaries
+Convergence Energy Services Limited
+Energy Efficiency Services Limited
+Green Valley Renewable Energy Limited (GVREL)
+NTPC Mining Limited
+NTPC Green Energy
+NTPC Renewables Limited
+National High Power Test Laboratory Private Limited (NHPTL)
+NEEPCO
+THDC India Limited
+Tusco Ltd.
+
+## Joint ventures
+Aravali Power Company Pvt. Ltd.
+
+## Capacity of plants
+The total installed capacity of the company is 72,304 MW (including 13,465 MW through JVs/subsidiaries) across the country, (26 Coal based stations, seven gas based stations, one hydro station, one small hydro, 11 solar PV, and one wind based station) and 25 joint venture stations (nine coal based, four gas based, eight hydro-powered, one small hydro, two wind-powered, and one solar PV).
+
+### Thermal power
+
+
+#### Coal-based power plants (own operational)
+
+
+#### Coal-based (JV/subsidiary)
+
+
+#### Gas-based power plants (own operational)
+
+
+#### Gas-based (JV/subsidiary)
+
+
+### Hydro power
+The company has also stepped up its hydroelectric power (hydel) project implementation. Some of these projects are:
+
+#### Hydro-electric power plants (own operational)
+
+
+#### Hydro-electric power plants (JV/Subsidiary)
+
+
+### Renewable energy
+NTPC's current renewable power plants in solar and wind include:
+
+#### Solar photovoltaic power plants (own operational)
+
+
+#### Solar photovoltaic power plants (JV/subsidiary)
+
+
+#### Wind Power (own operational)
+
+
+#### Wind Power (JV/subsidiary)
+
+
+#### Small hydro
+Singrauli CW Discharge (small hydro) 8 (4x2) MW is on the discharge canal of the Singrauli Super Thermal Power Station in Uttar Pradesh. All units of this project are under commercial operation.
+NTPC-THDC has installed 24(8x3) MW Small Hydro Project at Dhukwan on Betwa river in Jhansi district of Uttar Pradesh.
+
+## Future goals
+The company has developed a long-term plan to become a 1,28,000 MW company by 2032. NTPC Limited is on an expansion spree to meet the power requirements of the country—the company has targeted to add 14,058 MW in 12th Plan (from FY13 to FY 17) of which it had already added 4,170 MW in 2012–2013, 1835 MW in 2013–2014, 1290 MW in 2014–2015, and 1150 MW from April–30 November 2015.
+As of 30 November 2015, the company has 23,004 MW under construction. NTPC is diversifying its capacity mix with much emphasis on renewable energy. As on 30 November 2015, NTPC has 110 MW Solar PV capacity under operation, 250 MW under construction, and 1260 MW under tendering. The company intends to add 10,000 MW of Solar PV capacity in the next five years. On 18 July 2015, NTPC declared commercial its first Hydro Power plant at Koldam in the state of Himachal Pradesh. The company has a long-term plan to reduce its fossil fuel capacity mix to 56% by 2032.
+NTPC also plans to go global. The public sector company has signed a memorandum of agreement (MoU) with the Government of Sri Lanka and Ceylon Electricity Board for setting up a 500 MW (2x250) coal-based thermal power plant in the island nation. An MoU has also been signed with Kyushu Electric Power Co. Inc., Japan, for establishing an alliance for exchange of information and experts from different areas of the business. The company is also in the process of finalising an MoU with Nigeria for setting up power plants against the allocation of LNG on a long-term basis for NTPC plants in India. NTPC is also developing a joint-venture coal-based power plant 1,320 MW (2x660) with the Bangladesh Power Development Board known as Bangladesh India Friendship Power Company in Ramp Bangladesh, which is facing tremendous opposition from the people of Bangladesh owing to the plant's dangerously close proximity to the Sundarbans.
+NTPC has also been allotted coal blocks, namely Pakri Barwadih, Chatti Bariatu, and Kerandari in Jharkhand as well as Talipalli, Chhattisgarh, and Dulanga in Odisha. Except for Pakri Barwadih, all other blocks were canceled by a decision of the Supreme Court of India on 24 September 2014. However, the company was again allotted canceled block under Section 5 of Coal Mines (Special Provision Act 2015) Besides these blocks, the Ministry of Coal has according to its press release dated 3 July 2013 allotted four more blocks namely, Banai and Bhalmuda in Chhattisgarh, Chandrabila and Kudanli Laburi in Odisha. Two more blocks namely Mandakini-II and Banhardih are expected to be allotted to NTPC soon. All these mines are having estimated geological reserves of 6.7 billion tonnes. NTPC has appointed Mining Cum Development Operator (MDO) for its Pakri Barwadih mine.
+
+## Listings and shareholding
+The equity shares of NTPC are listed on the Bombay Stock Exchange, where it is a constituent of the BSE SENSEX index, and the National Stock Exchange of India, where it is a constituent of the Nifty 50.
+In September 2015, the Government of India held around 74.96% equity shares in NTPC. Over 6,80,000 individual shareholders hold approx. 1.92% of its shares. Life Insurance Corporation of India is the largest non-promoter shareholder in the company with 10.03% shareholding.
+In August 2017, the GoI divested further its 5% stake in NTPC through OFS (Stock Exchange Mechanism) and reduced the holding of GOI in NTPC to 5,76,83,41,760 shares i.e. 64.96% out of total 8,24,54,64,400 shares.
+The balance is held by public, FIIs, Mutual Funds, and Banks.
+
+## Employees
+As of 31 March 2015, the company had 24,067 employees. The attrition rate for the FY 2014–2015, including the trainee employees and employees working for subsidiaries and JVs, was 1.35%. Man MW Ratio of the company has fallen from 0.77 in the FY11 to 0.61 in FY 15. NTPC has been awarded continuously as great places to work for in PSUs category.
+NTPC was ranked second among the 250 largest power producer energy traders in the world by Platts in 2015. On overall basis NTPC ranked 56th amongst Platts 250 companies. In 2009, it received ICSI National Award for Excellence in Corporate Governance.
+
+## Criticism
+
+
+### Land acquisition in tribal areas
+The company (and other PSUs in India) has been allotted land for setting power plants and related infrastructure in rural or tribal areas across the country by Central Government and various state governments. Some of these lands have been allotted to NTPC (and other PSUs in India) through Land Acquisition Acts passed by Central and State Governments. Wherever a land acquisition law is enacted, it also places a liability on the PSUs or governments to take actions for proper rehabilitation of displaced residents of that rural or tribal area. Governments or PSUs are criticised if they do not fulfill their liability towards displaced residents. In many areas where land acquisition is proposed through land acquisition laws, local residents oppose the forcible acquisition, as they are not sure of proper rehabilitation.
+
+### Future growth
+Draft National Electricity Plan (2016), prepared by GoI, states that India does not need additional coal-fired power plants until 2027 with the commissioning of various coal-based power plants which are presently under construction. India is not facing regular power shortages to purchase electricity at high prices, offering higher profit margins to the competing power generating companies. With the help of assured power purchase agreements (PPA) from the state-owned DisComs, NTPC was able to sell its power at higher margins on the deployed capital and higher overhead costs. Moreover, its main expertise of generating power from coal-fired stations is becoming obsolete in terms of technology and economics against non-conventional power generation like wind, solar, etc. In the future, for the satisfactory growth mainly from wind and solar power projects, NTPC is ready to slash all its extra profit margins on capital deployed to bring down the power sale price at par with the IPPs to secure the projects in open competitive bidding.
+Government has decided to scrap the coal-fired power stations which are more than 25 years old to reduce the pollution. Instead of scrapping old pulverised coal-fired units, NTPC should replace coal with torrefied crops waste/biomass as fuel in these units (nearly 11,000 MW) to make them profitable and productive assets without contributing to pollution.
+To utilise its proven O&M expertise, NTPC may venture on a major scale to implement the solar thermal storage power as they can offer clean and cheaper electricity than fossil fuel-fired power generation plants.
+Rather than install emissions-cutting technologies, NTPC has chosen to lobby the government to extend pollution reduction deadlines.
+
+### Controversies with projects
+Loharinag Pala Hydro Power Project by NTPC Ltd: Loharinag Pala Hydro Power Project (600 MW i.e. 150 MW × 4 units) is located on the river Bhagirathi (a tributary of the Ganges) in Uttarkashi district of Uttarakhand state. This is the first project downstream from the origin of the Ganges at Gangotri. The project was at the advanced stage of construction when it was discontinued by the Government of India in August 2010.
+Rupasiyabagar Khasiabara HPP, 261 MW in Pithoragarh, Uttarakhand State, near China Border, is yet to be given investment approval..
+Badarpur Thermal Power Station has been permanently closed due to pollution issues in Delhi NCR. The total installed capacity of all of its units was 705 MW, which has been retired and fully closed since 15 October 2018.
+
+## See also
+Electricity in India
+Energy in India
+List of companies of India
+List of public sector undertakings in India
+2017 NTPC power plant explosion
+
+## References
+
+
+## External links
+Official website
+
