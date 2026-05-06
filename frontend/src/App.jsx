@@ -67,7 +67,7 @@ export default function App() {
   // ── Load sessions from backend ──────────────────────────────────────────────
   const fetchSessions = useCallback(async () => {
     try {
-      const res = await fetch('http://localhost:8000/sessions');
+      const res = await fetch('http://127.0.0.1:8000/sessions');
       if (!res.ok) return;
       const data = await res.json();
       const remote = (data.sessions || []).map(s => ({
@@ -105,7 +105,7 @@ export default function App() {
     const load = async () => {
       setIsLoading(true);
       try {
-        const res = await fetch(`http://localhost:8000/history/${sessionId}`);
+        const res = await fetch(`http://127.0.0.1:8000/history/${sessionId}`);
         if (cancelled) return;
         if (res.ok) {
           const data = await res.json();
@@ -155,7 +155,7 @@ export default function App() {
   // ── Delete session ──────────────────────────────────────────────────────────
   const handleDelete = async (e, id) => {
     e.stopPropagation();
-    try { await fetch(`http://localhost:8000/history/${id}`, { method: 'DELETE' }); } catch (_) {}
+    try { await fetch(`http://127.0.0.1:8000/history/${id}`, { method: 'DELETE' }); } catch (_) {}
     setSessions(prev => {
       const next = prev.filter(s => s.id !== id);
       if (sessionId === id) {
@@ -172,17 +172,26 @@ export default function App() {
     if (!msg || isLoading) return;
     setInput('');
 
-    setSessions(prev => prev.map(s =>
-      s.id === sessionId && s.messageCount === 0
-        ? { ...s, name: msg.substring(0, 38) + (msg.length > 38 ? '…' : ''), messageCount: 1 }
-        : s
-    ));
+    setSessions(prev => prev.map(s => {
+  if (s.id === sessionId) {
+    // If it's still "New Chat", replace with first message
+    const isDefault = s.name === 'New Chat';
+    return {
+      ...s,
+      name: isDefault
+        ? msg.substring(0, 38) + (msg.length > 38 ? '…' : '')
+        : s.name,
+      messageCount: (s.messageCount || 0) + 1,
+    };
+  }
+  return s;
+}));
 
     setMessages(prev => [...prev, { role: 'user', text: msg }]);
     setIsLoading(true);
 
     try {
-      const res = await fetch('http://localhost:8000/chat', {
+      const res = await fetch('http://127.0.0.1:8000/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ message: msg, session_id: sessionId }),
@@ -212,7 +221,6 @@ export default function App() {
   // ── Render ──────────────────────────────────────────────────────────────────
   return (
     <div className="flex h-screen w-full bg-[#0B0F19] text-slate-100 overflow-hidden relative">
-
       {/* Background glow */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-[40%] left-[10%] w-[55%] h-[55%] rounded-full bg-blue-500/[0.07] blur-[130px]" />
@@ -244,7 +252,7 @@ export default function App() {
           </button>
 
           {/* Session list */}
-          <div className="flex-1 overflow-y-auto space-y-1 pr-1 scrollbar-thin scrollbar-thumb-slate-700">
+          <div className="flex-1 overflow-y-auto space-y-1 pr-1 scrollbar-thin scrollbar-thumb-slate-700 custom-scrollbar">
             <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-widest mb-2 px-1">
               Conversations
             </p>
@@ -303,7 +311,7 @@ export default function App() {
         {/* Messages */}
         <div
           ref={chatRef}
-          className="flex-1 overflow-y-auto px-5 py-6 space-y-5 scrollbar-thin scrollbar-thumb-slate-700"
+          className="flex-1 overflow-y-auto px-5 py-6 space-y-5 scrollbar-thin scrollbar-thumb-slate-700 custom-scrollbar"
         >
           {messages.map((msg, i) => (
             <MessageBubble

@@ -1,114 +1,33 @@
 """
-retriever.py — Hybrid retriever combining a NetworkX knowledge graph (structured)
-with a ChromaDB vector store (semantic / Wikipedia chunks).
-
-Anchor resolution order:
-  1. Explicit ticker alias lookup (TICKER_ALIASES dict)
-  2. Sector keyword match (only unambiguous multi-word phrases)
-  3. Company-node substring fallback — always runs, never blocked by step 1/2
-
-BFS traversal renders VALUE_AT edges as self-contained fact lines:
-  WIPRO → VALUE_AT (as of 2025-12-31) → Total Revenue: ₹235.56 Billion
+retriever.py — Hybrid graph + vector retriever for the NIFTY knowledge graph.
 """
 
 import pickle
-from typing import Any, List, Optional
+from typing import Any, List
 
-from pydantic import PrivateAttr
+from pydantic import BaseModel, Field, PrivateAttr
 from langchain_core.retrievers import BaseRetriever
 from langchain_core.documents import Document
 from langchain_huggingface import HuggingFaceEmbeddings
-from langchain_community.vectorstores import Chroma
-
-# ── Ticker aliases ─────────────────────────────────────────────────────────────
-# Define as Ticker -> list of aliases for readability
-_RAW_TICKER_ALIASES = {
-    "RELIANCE": ["ril", "reliance"],
-    "TCS": ["tcs", "tata consultancy services", "tata consultancy"],
-    "INFY": ["infy", "infosys"],
-    "HDFCBANK": ["hdfc bank", "hdfcbank"],
-    "ICICIBANK": ["icici bank", "icicibank"],
-    "WIPRO": ["wipro"],
-    "HINDUNILVR": ["hindustan unilever", "hul", "hindunilvr"],
-    "BHARTIARTL": ["bharti airtel", "airtel", "bhartiartl"],
-    "BAJFINANCE": ["bajaj finance", "bajfinance"],
-    "KOTAKBANK": ["kotak mahindra bank", "kotak mahindra", "kotak bank", "kotak", "kotakbank"],
-    "SBIN": ["state bank of india", "state bank", "sbi"],
-    "M&M": ["mahindra and mahindra", "mahindra & mahindra", "m&m", "mahindra"],
-    "MARUTI": ["maruti suzuki", "maruti", "msil"],
-    "NTPC": ["ntpc"],
-    "ONGC": ["ongc"],
-    "POWERGRID": ["power grid corporation", "power grid", "powergrid"],
-    "SUNPHARMA": ["sun pharmaceutical", "sun pharma", "sunpharma"],
-    "TITAN": ["titan company", "titan"],
-    "ULTRACEMCO": ["ultratech cement", "ultratech", "ultracemco"],
-    "NESTLEIND": ["nestle india", "nestle", "nestleind"],
-    "HCLTECH": ["hcl technologies", "hcl tech", "hcltech", "hcl"],
-    "ASIANPAINT": ["asian paints", "asianpaint"],
-    "AXISBANK": ["axis bank", "axis", "axisbank"],
-    "ADANIPORTS": ["adani ports", "adaniports"],
-    "COALINDIA": ["coal india", "coalindia"],
-    "JSWSTEEL": ["jsw steel", "jswsteel"],
-    "TATASTEEL": ["tata steel", "tatasteel"],
-    "TATACONSUM": ["tata consumer products", "tata consumer", "tataconsum"],
-    "TATAMOTORS": ["tata motors", "tatamotors"],
-    "TECHM": ["tech mahindra", "techm"],
-    "CIPLA": ["cipla"],
-    "DRREDDY": ["dr reddy's laboratories", "dr reddys", "dr reddy", "drreddy"],
-    "DIVISLAB": ["divi's laboratories", "divis laboratories", "divis lab", "divislab"],
-    "APOLLOHOSP": ["apollo hospitals", "apollo", "apollohosp"],
-    "BAJAJ-AUTO": ["bajaj auto", "bajajauto"],
-    "BAJAJFINSV": ["bajaj finserv", "bajajfinsv"],
-    "BPCL": ["bharat petroleum", "bpcl"],
-    "BRITANNIA": ["britannia industries", "britannia"],
-    "EICHERMOT": ["eicher motors", "eichermot"],
-    "GRASIM": ["grasim industries", "grasim"],
-    "HDFCLIFE": ["hdfc life insurance", "hdfc life", "hdfclife"],
-    "HEROMOTOCO": ["hero motocorp", "hero moto", "heromotoco"],
-    "HINDALCO": ["hindalco industries", "hindalco"],
-    "INDUSINDBK": ["indusind bank", "indusind", "indusindbk"],
-    "LT": ["larsen and toubro", "larsen & toubro", "l&t", "lt"],
-    "LTIM": ["ltimindtree", "lti mindtree"],
-    "SBILIFE": ["sbi life insurance", "sbi life", "sbilife"],
-    "SHRIRAMFIN": ["shriram finance", "shriramfin"],
-    "VEDL": ["vedanta"],
-    "ZOMATO": ["zomato"],
-    "ADANIENT": ["adani enterprises", "adanient"],
-    "JIOFIN": ["jio financial services", "jio financial", "jiofin"],
-}
-
-# Invert dictionary: lowercase query -> graph node ID
-# Sorted longest-first at runtime so multi-word aliases shadow shorter ones.
-TICKER_ALIASES: dict[str, str] = {
-    alias: ticker 
-    for ticker, aliases in _RAW_TICKER_ALIASES.items() 
-    for alias in aliases
-}
-
-# ── Sector keywords — ONLY unambiguous multi-word phrases ────────────────────
-# Short tokens like "it", "in", "auto" can false-match inside common words.
-_RAW_SECTOR_KEYWORDS = {
-    "Information Technology": ["it sector", "technology sector", "information technology sector"],
-    "Energy": ["energy sector"],
-    "Financial Services": ["banking sector", "financial services sector"],
-    "Healthcare": ["pharma sector", "healthcare sector"],
-    "Consumer Staples": ["fmcg sector", "consumer staples sector"],
-    "Automobile": ["automobile sector", "auto sector"],
-}
-
-SECTOR_KEYWORDS: dict[str, str] = {
-    kw: sector 
-    for sector, kws in _RAW_SECTOR_KEYWORDS.items() 
-    for kw in kws
-}
+from langchain_chroma import Chroma
 
 
+# ── Pydantic schema for LLM structured output ────────────────
+class EntityExtraction(BaseModel):
+    companies: List[str] = Field(
+        description="Exact NSE stock ticker symbols (e.g. TCS, RELIANCE, INFY) found in the query."
+    )
+
+
+# Labels that are values / time nodes — never valid query anchors
+_SKIP_LABELS = {"FinancialMetric", "TimePeriod", "Shareholding"}
+
+
+# ── Graph retriever ───────────────────────────────────────────
 class NiftyGraphRetriever(BaseRetriever):
-    """Structured retriever: BFS over a NetworkX MultiDiGraph."""
-
-    graph_path:       str
-    max_hops:         int = 2
-    max_anchor_nodes: int = 3
+    graph_path: str
+    max_hops: int = 2
+    llm: Any = None
     _G: Any = PrivateAttr()
 
     def __init__(self, **kwargs):
@@ -116,149 +35,209 @@ class NiftyGraphRetriever(BaseRetriever):
         with open(self.graph_path, "rb") as f:
             self._G = pickle.load(f)
 
-    # ── Value formatting ──────────────────────────────────────────────────────
+    # ── Anchor resolution ─────────────────────────────────────
 
-    def _fmt(self, val: Any) -> Optional[str]:
-        """Convert raw numeric string to ₹ string. Returns None for NaN."""
-        try:
-            num = float(val)
-            if num != num:
-                return None
-            if abs(num) >= 1e12:
-                return f"₹{num / 1e12:.2f} Trillion"
-            if abs(num) >= 1e9:
-                return f"₹{num / 1e9:.2f} Billion"
-            if abs(num) >= 1e7:
-                return f"₹{num / 1e7:.2f} Crore"
-            return f"₹{num:,.2f}"
-        except (ValueError, TypeError):
-            return str(val)
-
-    # ── Anchor resolution ─────────────────────────────────────────────────────
-
-    def _resolve_anchors(self, query: str) -> List[str]:
-        q = query.lower()
-        matched: set[str] = set()
-
-        # 1. Ticker alias — longest match first to avoid "kotak" shadowing
-        #    "kotak mahindra bank" etc.
-        for alias in sorted(TICKER_ALIASES, key=len, reverse=True):
-            if alias in q:
-                matched.add(TICKER_ALIASES[alias])
-
-        # 2. Sector keywords (only unambiguous phrases)
-        for kw, sector_node in SECTOR_KEYWORDS.items():
-            if kw in q and sector_node in self._G:
-                matched.add(sector_node)
-
-        # 3. Company-node substring fallback — ALWAYS runs (not gated on
-        #    prior matches) so companies absent from TICKER_ALIASES are found.
-        query_words = {w for w in q.split() if len(w) > 3}
-        for node, attrs in self._G.nodes(data=True):
-            if attrs.get("label") != "Company":
+    def _substring_anchors(self, query: str) -> list:
+        """
+        Fallback: find graph nodes whose name or full_name appears verbatim in the query.
+        """
+        q_lower = query.lower()
+        matches = []
+        for node in self._G.nodes:
+            if not isinstance(node, str) or len(node) <= 1:
                 continue
-            node_lower = str(node).lower()
-            full_name  = str(attrs.get("full_name", "")).lower()
-            if (node_lower in q
-                    or full_name in q
-                    or any(w in node_lower for w in query_words)
-                    or any(w in full_name  for w in query_words)):
-                matched.add(str(node))
+            
+            data = self._G.nodes[node]
+            label = data.get("label", "")
+            if label in _SKIP_LABELS:
+                continue
+            
+            # 1. Exact node ID match (e.g., "TCS", "Energy")
+            if node.lower() in q_lower:
+                if node not in matches: matches.append(node)
+                continue
+            
+            # 2. Full name match mapping (e.g., "Infosys Limited" -> INFY)
+            full_name = data.get("full_name", "").lower()
+            if full_name:
+                clean_name = full_name.replace(" limited", "").replace(" ltd.", "").replace(" ltd", "").strip()
+                if clean_name and clean_name in q_lower:
+                    if node not in matches: 
+                        matches.append(node)
+                    continue
+                
+                # First word match if highly distinctive (e.g., "Infosys", "Maruti")
+                first_word = clean_name.split()[0]
+                if len(first_word) >= 4 and first_word in q_lower:
+                    if node not in matches: 
+                        matches.append(node)
 
-        return list(matched)[: self.max_anchor_nodes]
+        # Prefer Company nodes first, then others
+        matches.sort(key=lambda n: 0 if self._G.nodes[n].get("label") == "Company" else 1)
+        return matches[:4]
 
-    # ── BFS traversal ─────────────────────────────────────────────────────────
+    def _resolve_anchors(self, query: str) -> list:
+        """
+        Resolve query to graph anchor nodes.
+        Short-circuits LLM entirely if substring matching successfully finds a company.
+        """
+        substring = self._substring_anchors(query)
+        
+        # SHORT-CIRCUIT: Massive speedup. If we already found a company via name mapping, skip the LLM.
+        if any(self._G.nodes[n].get("label") == "Company" for n in substring):
+            return substring[:4]
+
+        if not self.llm:
+            return substring[:2]
+
+        # ── LLM ticker extraction ─────────────────────────────
+        valid_tickers: list = []
+        try:
+            extractor = self.llm.with_structured_output(EntityExtraction)
+            result = extractor.invoke(
+                "Extract the exact NSE stock ticker symbols (e.g. TCS, RELIANCE, INFY, "
+                "HDFCBANK, WIPRO) for Indian companies mentioned in this query. "
+                "Return ONLY valid tickers as a JSON list. "
+                "If no company is mentioned, return an empty list. "
+                f"Query: {query}"
+            )
+            candidates = [t.strip().upper() for t in (result.companies or [])]
+            valid_tickers = [n for n in candidates if n in self._G.nodes]
+        except Exception as e:
+            print(f"[GraphRetriever] LLM extraction failed: {e}")
+
+        if valid_tickers:
+            extras = [n for n in substring if self._G.nodes[n].get("label") != "Company"
+                      and n not in valid_tickers]
+            return (valid_tickers + extras)[:4]
+
+        return substring[:2]
+
+    # ── Graph traversal ───────────────────────────────────────
 
     def _traverse(self, anchor: str) -> str:
         if anchor not in self._G:
             return ""
 
-        visited  = {anchor}
-        node_type = self._G.nodes[anchor].get("label", "Entity")
-        lines    = [f"[Core] {anchor} ({node_type})"]
-        frontier = [anchor]
+        node_data = self._G.nodes[anchor]
+        node_label = node_data.get("label", "Entity")
+        full_name  = node_data.get("full_name", anchor)
 
-        for hop in range(self.max_hops):
-            next_frontier: list[str] = []
-            for current in frontier:
-                for _u, v, data in self._G.out_edges(current, data=True):
-                    rel    = data.get("relation", "LINKED")
-                    v_type = self._G.nodes[v].get("label", "Node")
-                    indent = "  " * (hop + 1)
+        lines = [
+            f"=== {anchor} | {node_label} | {full_name} ===",
+        ]
 
-                    if rel == "VALUE_AT":
-                        # Use pre-formatted value stored at ingest time
-                        formatted = data.get("formatted") or self._fmt(data.get("value", ""))
-                        date_str  = data.get("date", "")
-                        date_tag  = f" (as of {date_str})" if date_str else ""
-                        val_part  = f": {formatted}" if formatted else ""
-                        lines.append(
-                            f"{indent}→ VALUE_AT{date_tag} → [{v_type}] {v}{val_part}"
-                        )
-                    elif rel == "REPORTED_ON":
-                        # Skip — this edge is only for visualisation
-                        pass
-                    else:
-                        raw_val = data.get("value", "")
-                        val_str = f" ({raw_val})" if raw_val else ""
-                        lines.append(f"{indent}→ {rel}{val_str} → [{v_type}] {v}")
+        if node_label == "Company":
+            metrics: dict[str, list] = {}
 
-                    if v not in visited:
-                        visited.add(v)
-                        next_frontier.append(v)
-            frontier = next_frontier
+            for _, v, data in self._G.out_edges(anchor, data=True):
+                rel = data.get("relation", "")
 
-        return "\n".join(lines)
+                if rel == "VALUE_AT":
+                    metric   = str(v)
+                    date_str = data.get("date", "N/A")
+                    val      = data.get("formatted") or data.get("value", "N/A")
+                    metrics.setdefault(metric, []).append(f"{val} ({date_str})")
 
-    # ── LangChain interface ───────────────────────────────────────────────────
+                elif rel == "IN_SECTOR":
+                    lines.append(f"Sector: {v}")
 
-    def _get_relevant_documents(
-        self, query: str, *, run_manager=None
-    ) -> List[Document]:
+                elif rel == "IN_INDUSTRY":
+                    lines.append(f"Industry: {v}")
+
+                elif rel in ("HELD_BY_INSIDERS", "HELD_BY_INSTITUTIONS"):
+                    sh_data = self._G.nodes.get(str(v), {})
+                    pct     = sh_data.get("value", "N/A")
+                    label_clean = rel.replace("HELD_BY_", "").replace("_", " ").title()
+                    lines.append(f"{label_clean} Holding: {pct}")
+
+            for metric in sorted(metrics):
+                entries = " | ".join(metrics[metric])
+                lines.append(f"{metric}: {entries}")
+
+            for u, _, data in self._G.in_edges(anchor, data=True):
+                if data.get("relation") == "LEADS":
+                    lines.append(f"Leadership: {u}")
+
+        elif node_label in ("Sector", "Industry"):
+            rel_type = "IN_SECTOR" if node_label == "Sector" else "IN_INDUSTRY"
+            member_companies = []
+            for u, v, data in self._G.in_edges(anchor, data=True):
+                if data.get("relation") == rel_type:
+                    company_name = self._G.nodes.get(u, {}).get("full_name", u)
+                    member_companies.append(f"{u} ({company_name})")
+
+            if member_companies:
+                lines.append(f"Companies in {anchor} [{node_label}]:")
+                lines.extend(f"  - {c}" for c in sorted(member_companies))
+            else:
+                lines.append(f"No companies found under {anchor}.")
+
+        elif node_label == "Person":
+            for _, v, data in self._G.out_edges(anchor, data=True):
+                if data.get("relation") == "LEADS":
+                    company_name = self._G.nodes.get(v, {}).get("full_name", v)
+                    lines.append(f"Leads: {v} ({company_name})")
+
+        result = "\n".join(lines)
+        return result if len(lines) > 1 else ""
+
+    def _get_relevant_documents(self, query: str, *, run_manager=None):
         anchors = self._resolve_anchors(query)
-        docs: List[Document] = []
+        print(f"[GraphRetriever] Query='{query}' → Anchors={anchors}")
+
+        docs = []
         for anchor in anchors:
-            content = self._traverse(anchor)
-            if content:
+            txt = self._traverse(anchor)
+            if txt:
                 docs.append(Document(
-                    page_content=content,
+                    page_content=txt,
                     metadata={"source": "graph", "anchor": anchor},
                 ))
         return docs
 
 
+# ── Hybrid retriever (graph + vector) ────────────────────────
 class HybridNiftyRetriever(BaseRetriever):
-    """Combines structured graph retrieval with semantic vector search."""
-
     graph_path:  str
     chroma_path: str
-    max_hops:    int = 2
-    vector_k:    int = 5
-    _graph_retriever: Any = PrivateAttr()
-    _vectorstore:     Any = PrivateAttr()
+    llm: Any = None
+    _graph:  Any = PrivateAttr()
+    _vector: Any = PrivateAttr()
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self._graph_retriever = NiftyGraphRetriever(
-            graph_path=self.graph_path,
-            max_hops=self.max_hops,
-        )
-        embeddings = HuggingFaceEmbeddings(
+        self._graph = NiftyGraphRetriever(graph_path=self.graph_path, llm=self.llm)
+
+        emb = HuggingFaceEmbeddings(
             model_name="BAAI/bge-small-en-v1.5",
             model_kwargs={"device": "cpu"},
-            encode_kwargs={"normalize_embeddings": True},
         )
-        self._vectorstore = Chroma(
+        self._vector = Chroma(
             persist_directory=self.chroma_path,
-            embedding_function=embeddings,
+            embedding_function=emb,
         )
 
-    def _get_relevant_documents(
-        self, query: str, *, run_manager=None
-    ) -> List[Document]:
-        graph_docs = self._graph_retriever.invoke(query)
+    def _get_relevant_documents(self, query: str, *, run_manager=None):
+        graph_docs = self._graph.invoke(query)
+
+        standard_docs: list = []
+        community_docs: list = []
+
         try:
-            vector_docs = self._vectorstore.similarity_search(query, k=self.vector_k)
-        except Exception:
-            vector_docs = []
-        return graph_docs + vector_docs
+            standard_docs = self._vector.similarity_search(query, k=3)
+            for doc in standard_docs:
+                doc.metadata.setdefault("source", "vector_kb")
+        except Exception as e:
+            print(f"[VectorRetriever] Standard search failed: {e}")
+
+        try:
+            community_docs = self._vector.similarity_search(
+                query,
+                k=2,
+                filter={"source": "community_summary"},
+            )
+        except Exception as e:
+            pass 
+
+        return graph_docs + standard_docs + community_docs

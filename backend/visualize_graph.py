@@ -181,8 +181,8 @@ def generate_graph(
     # ── 6. Save and post-process ──────────────────────────────────────────────
     net.save_graph(output_path)
 
-    with open(output_path, "r", encoding="utf-8") as f:
-        html = f.read()
+    with open(output_path, "rb") as f:
+        html = f.read().decode("utf-8", errors="replace")
 
     # Hide the loading bar; position the config panel top-right
     custom_style = """
