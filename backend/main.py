@@ -27,6 +27,7 @@ os.environ.pop("REQUESTS_CA_BUNDLE", None)
 os.environ.pop("CURL_CA_BUNDLE", None)
 
 load_dotenv()
+print("HF_TOKEN loaded:", bool(os.getenv("HF_TOKEN")))
 
 _HERE = Path(__file__).resolve().parent
 _DEFAULT_GRAPH  = str(_HERE.parent / "data" / "networkx" / "nifty_graph.pkl")
@@ -412,4 +413,4 @@ async def delete_all_sessions():
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    uvicorn.run(app, host="127.0.0.1", port=8000)
