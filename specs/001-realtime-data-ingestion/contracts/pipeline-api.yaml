@@ -1,0 +1,193 @@
+openapi: "3.0.3"
+info:
+  title: FinBot Pipeline API
+  version: "1.0.0"
+  description: >
+    REST endpoints for monitoring and controlling the real-time NIFTY 50
+    data ingestion pipeline. These endpoints are added to the existing
+    FastAPI application alongside the chat API.
+
+paths:
+
+  /pipeline/status:
+    get:
+      summary: Get pipeline status and run history
+      description: >
+        Returns whether a run is currently in progress, the last successful
+        refresh timestamp, a staleness warning if data is over 48 hours old,
+        and a configurable history of past runs (default: last 10).
+      operationId: getPipelineStatus
+      responses:
+        "200":
+          description: Pipeline status retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PipelineStatusResponse"
+              example:
+                is_running: false
+                last_successful_at: "2026-06-16T13:30:00Z"
+                staleness_warning: false
+                current_run: null
+                history:
+                  - run_id: "3e7f1a2b-0000-0000-0000-000000000001"
+                    trigger: "scheduled"
+                    started_at: "2026-06-16T13:30:00Z"
+                    completed_at: "2026-06-16T14:02:15Z"
+                    status: "completed"
+                    companies_attempted: 50
+                    companies_succeeded: 50
+                    companies_failed: 0
+                    failure_details: []
+                    rollback_triggered: false
+
+  /pipeline/trigger:
+    post:
+      summary: Manually trigger a data refresh
+      description: >
+        Starts an immediate pipeline run regardless of schedule.
+        Rejected (409) if a run is already in progress.
+      operationId: triggerPipeline
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              description: Empty body — no parameters required.
+      responses:
+        "202":
+          description: Pipeline run accepted and starting
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TriggerResponse"
+              example:
+                run_id: "3e7f1a2b-0000-0000-0000-000000000002"
+                status: "started"
+                message: "Pipeline run started. Poll GET /pipeline/status for progress."
+        "409":
+          description: A pipeline run is already in progress
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                detail: "A pipeline run is already in progress (run_id: 3e7f1a2b-...). Wait for it to complete before triggering a new run."
+
+components:
+  schemas:
+
+    IngestionRun:
+      type: object
+      required:
+        - run_id
+        - trigger
+        - started_at
+        - status
+        - companies_attempted
+        - companies_succeeded
+        - companies_failed
+        - failure_details
+        - rollback_triggered
+      properties:
+        run_id:
+          type: string
+          format: uuid
+          description: Unique identifier for this pipeline run
+        trigger:
+          type: string
+          enum: [scheduled, manual]
+          description: What initiated this run
+        started_at:
+          type: string
+          format: date-time
+          description: ISO 8601 timestamp when the run started
+        completed_at:
+          type: string
+          format: date-time
+          nullable: true
+          description: ISO 8601 timestamp when the run ended; null if still running
+        status:
+          type: string
+          enum: [running, completed, failed, rolled_back]
+          description: Current or final status of the run
+        companies_attempted:
+          type: integer
+          minimum: 0
+          description: Total number of companies the pipeline attempted to fetch
+        companies_succeeded:
+          type: integer
+          minimum: 0
+          description: Companies successfully fetched and ingested
+        companies_failed:
+          type: integer
+          minimum: 0
+          description: Companies that failed during fetch or ingest
+        failure_details:
+          type: array
+          items:
+            $ref: "#/components/schemas/CompanyFailure"
+          description: Per-company error details for failed companies
+        rollback_triggered:
+          type: boolean
+          description: True if the pipeline rolled back to the previous graph due to insufficient success rate
+
+    CompanyFailure:
+      type: object
+      required: [symbol, error]
+      properties:
+        symbol:
+          type: string
+          description: NSE ticker symbol (e.g., TCS, RELIANCE)
+        error:
+          type: string
+          description: Human-readable error message
+
+    PipelineStatusResponse:
+      type: object
+      required:
+        - is_running
+        - staleness_warning
+        - history
+      properties:
+        is_running:
+          type: boolean
+          description: True if a pipeline run is currently executing
+        last_successful_at:
+          type: string
+          format: date-time
+          nullable: true
+          description: Timestamp of the most recent completed (non-rolled-back) run; null if no successful run has ever occurred
+        staleness_warning:
+          type: boolean
+          description: True if last_successful_at is more than 48 hours ago (or null)
+        current_run:
+          $ref: "#/components/schemas/IngestionRun"
+          nullable: true
+          description: The currently running IngestionRun, or null if idle
+        history:
+          type: array
+          items:
+            $ref: "#/components/schemas/IngestionRun"
+          description: Most recent N completed runs (default 10, controlled by PIPELINE_MAX_HISTORY)
+
+    TriggerResponse:
+      type: object
+      required: [run_id, status, message]
+      properties:
+        run_id:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum: [started]
+        message:
+          type: string
+
+    ErrorResponse:
+      type: object
+      required: [detail]
+      properties:
+        detail:
+          type: string
