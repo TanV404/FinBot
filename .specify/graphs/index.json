@@ -1,0 +1,971 @@
+{
+  "version": "1.0",
+  "generated_at": "2026-06-16T00:00:00Z",
+  "nodes": [
+    {
+      "id": "FILE-fetch_data.py",
+      "type": "file",
+      "label": "fetch_data.py",
+      "path": "fetch_data.py",
+      "legacy": true,
+      "feature": "discovery",
+      "metadata": {
+        "description": "Data acquisition script: fetches yFinance financials and Wikipedia articles for all NIFTY 50 companies",
+        "language": "python",
+        "entrypoint": true
+      }
+    },
+    {
+      "id": "FILE-backend/main.py",
+      "type": "file",
+      "label": "backend/main.py",
+      "path": "backend/main.py",
+      "legacy": true,
+      "feature": "discovery",
+      "metadata": {
+        "description": "FastAPI application: exposes REST chat API, manages SQLite session history, orchestrates LangChain RAG chain",
+        "language": "python",
+        "entrypoint": true,
+        "fan_out": 7
+      }
+    },
+    {
+      "id": "FILE-backend/retriever.py",
+      "type": "file",
+      "label": "backend/retriever.py",
+      "path": "backend/retriever.py",
+      "legacy": true,
+      "feature": "discovery",
+      "metadata": {
+        "description": "HybridNiftyRetriever: combines NiftyGraphRetriever (NetworkX traversal) and ChromaDB vector search",
+        "language": "python",
+        "hub": false
+      }
+    },
+    {
+      "id": "FILE-backend/ingest.py",
+      "type": "file",
+      "label": "backend/ingest.py",
+      "path": "backend/ingest.py",
+      "legacy": true,
+      "feature": "discovery",
+      "metadata": {
+        "description": "Knowledge graph builder: parses yFinance txt files into NetworkX MultiDiGraph and wiki chunks into ChromaDB",
+        "language": "python",
+        "entrypoint": true
+      }
+    },
+    {
+      "id": "FILE-backend/communities.py",
+      "type": "file",
+      "label": "backend/communities.py",
+      "path": "backend/communities.py",
+      "legacy": true,
+      "feature": "discovery",
+      "metadata": {
+        "description": "GraphRAG community detection: Louvain clustering on NetworkX graph, LLM summarization, stores summaries in ChromaDB",
+        "language": "python",
+        "entrypoint": true
+      }
+    },
+    {
+      "id": "FILE-backend/visualize_graph.py",
+      "type": "file",
+      "label": "backend/visualize_graph.py",
+      "path": "backend/visualize_graph.py",
+      "legacy": true,
+      "feature": "discovery",
+      "metadata": {
+        "description": "PyVis HTML renderer for the NIFTY knowledge graph — standalone utility script",
+        "language": "python",
+        "entrypoint": true,
+        "orphan_candidate": true
+      }
+    },
+    {
+      "id": "FILE-backend/evaluate_rag.py",
+      "type": "file",
+      "label": "backend/evaluate_rag.py",
+      "path": "backend/evaluate_rag.py",
+      "legacy": true,
+      "feature": "discovery",
+      "metadata": {
+        "description": "End-to-end RAG evaluation harness: LLM-as-judge scoring, exports Excel report with KPIs and charts",
+        "language": "python",
+        "entrypoint": true
+      }
+    },
+    {
+      "id": "FILE-backend/test_embedding.py",
+      "type": "file",
+      "label": "backend/test_embedding.py",
+      "path": "backend/test_embedding.py",
+      "legacy": true,
+      "feature": "discovery",
+      "metadata": {
+        "description": "Test/diagnostic script for HuggingFace embedding model",
+        "language": "python",
+        "orphan_candidate": true
+      }
+    },
+    {
+      "id": "FILE-backend/test_hf.py",
+      "type": "file",
+      "label": "backend/test_hf.py",
+      "path": "backend/test_hf.py",
+      "legacy": true,
+      "feature": "discovery",
+      "metadata": {
+        "description": "Test/diagnostic script for HuggingFace API integration",
+        "language": "python",
+        "orphan_candidate": true
+      }
+    },
+    {
+      "id": "FILE-frontend/src/main.jsx",
+      "type": "file",
+      "label": "frontend/src/main.jsx",
+      "path": "frontend/src/main.jsx",
+      "legacy": true,
+      "feature": "discovery",
+      "metadata": {
+        "description": "React entry point: mounts App into DOM via createRoot",
+        "language": "jsx",
+        "entrypoint": true
+      }
+    },
+    {
+      "id": "FILE-frontend/src/App.jsx",
+      "type": "file",
+      "label": "frontend/src/App.jsx",
+      "path": "frontend/src/App.jsx",
+      "legacy": true,
+      "feature": "discovery",
+      "metadata": {
+        "description": "Main chat UI: session management, message display with typewriter effect, calls all backend REST endpoints",
+        "language": "jsx"
+      }
+    },
+    {
+      "id": "ENT-ChatSession",
+      "type": "entity",
+      "label": "ChatSession",
+      "legacy": true,
+      "feature": "discovery",
+      "metadata": {
+        "description": "Persistent chat session stored in SQLite (message_store table via LangChain SQLChatMessageHistory)",
+        "store": "sqlite:nifty_chat_history.db"
+      }
+    },
+    {
+      "id": "ENT-SessionSummary",
+      "type": "entity",
+      "label": "SessionSummary",
+      "legacy": true,
+      "feature": "discovery",
+      "metadata": {
+        "description": "LLM-generated rolling summary per session, stored in session_summaries table, injected as context into QA prompt",
+        "store": "sqlite:nifty_chat_history.db"
+      }
+    },
+    {
+      "id": "ENT-KnowledgeGraph",
+      "type": "entity",
+      "label": "KnowledgeGraph",
+      "legacy": true,
+      "feature": "discovery",
+      "metadata": {
+        "description": "Serialized NetworkX MultiDiGraph: Company, Sector, Industry, Person, FinancialMetric, TimePeriod, Shareholding nodes",
+        "store": "data/networkx/nifty_graph.pkl"
+      }
+    },
+    {
+      "id": "ENT-VectorStore",
+      "type": "entity",
+      "label": "VectorStore",
+      "legacy": true,
+      "feature": "discovery",
+      "metadata": {
+        "description": "ChromaDB collection embedding wiki text chunks + community summaries using BAAI/bge-small-en-v1.5",
+        "store": "data/chromadb/"
+      }
+    },
+    {
+      "id": "ENT-Company",
+      "type": "entity",
+      "label": "Company",
+      "legacy": true,
+      "feature": "discovery",
+      "metadata": {
+        "description": "NIFTY 50 company node in the knowledge graph (NSE ticker as ID, full_name, sector, industry, financials)",
+        "store": "data/networkx/nifty_graph.pkl"
+      }
+    },
+    {
+      "id": "ENT-FinancialMetric",
+      "type": "entity",
+      "label": "FinancialMetric",
+      "legacy": true,
+      "feature": "discovery",
+      "metadata": {
+        "description": "Financial metric node (Total Revenue, Net Income, EBITDA, etc.) linked to Company via VALUE_AT edges",
+        "store": "data/networkx/nifty_graph.pkl"
+      }
+    },
+    {
+      "id": "ENT-CommunitySummary",
+      "type": "entity",
+      "label": "CommunitySummary",
+      "legacy": true,
+      "feature": "discovery",
+      "metadata": {
+        "description": "LLM-generated summary of a Louvain community cluster, stored as ChromaDB document with source=community_summary",
+        "store": "data/communities/community_summaries.json + data/chromadb/"
+      }
+    },
+    {
+      "id": "EP-POST-/chat",
+      "type": "endpoint",
+      "label": "POST /chat",
+      "legacy": true,
+      "feature": "discovery",
+      "metadata": {
+        "method": "POST",
+        "path": "/chat",
+        "description": "Main chat endpoint: invokes RAG chain with session history and summary context, fires background summarization",
+        "request_body": "ChatRequest {message, session_id}",
+        "response": "{answer: string}"
+      }
+    },
+    {
+      "id": "EP-GET-/health",
+      "type": "endpoint",
+      "label": "GET /health",
+      "legacy": true,
+      "feature": "discovery",
+      "metadata": {
+        "method": "GET",
+        "path": "/health",
+        "description": "Health check: returns engine_ready status",
+        "response": "{status, engine_ready}"
+      }
+    },
+    {
+      "id": "EP-GET-/sessions",
+      "type": "endpoint",
+      "label": "GET /sessions",
+      "legacy": true,
+      "feature": "discovery",
+      "metadata": {
+        "method": "GET",
+        "path": "/sessions",
+        "description": "Lists all sessions with first-message preview, ordered by most recent",
+        "response": "{sessions: [{id, message_count, preview}]}"
+      }
+    },
+    {
+      "id": "EP-GET-/history/{session_id}",
+      "type": "endpoint",
+      "label": "GET /history/{session_id}",
+      "legacy": true,
+      "feature": "discovery",
+      "metadata": {
+        "method": "GET",
+        "path": "/history/{session_id}",
+        "description": "Returns full message history for a session",
+        "response": "{session_id, messages: [{role, content}]}"
+      }
+    },
+    {
+      "id": "EP-GET-/summary/{session_id}",
+      "type": "endpoint",
+      "label": "GET /summary/{session_id}",
+      "legacy": true,
+      "feature": "discovery",
+      "metadata": {
+        "method": "GET",
+        "path": "/summary/{session_id}",
+        "description": "Returns stored LLM summary for a session",
+        "response": "{session_id, summary}"
+      }
+    },
+    {
+      "id": "EP-DELETE-/history/{session_id}",
+      "type": "endpoint",
+      "label": "DELETE /history/{session_id}",
+      "legacy": true,
+      "feature": "discovery",
+      "metadata": {
+        "method": "DELETE",
+        "path": "/history/{session_id}",
+        "description": "Deletes all messages and summary for a session from SQLite"
+      }
+    },
+    {
+      "id": "EP-DELETE-/sessions",
+      "type": "endpoint",
+      "label": "DELETE /sessions",
+      "legacy": true,
+      "feature": "discovery",
+      "metadata": {
+        "method": "DELETE",
+        "path": "/sessions",
+        "description": "Deletes ALL sessions and summaries from SQLite"
+      }
+    },
+    {
+      "id": "FILE-backend/pipeline/__init__.py",
+      "type": "file",
+      "label": "backend/pipeline/__init__.py",
+      "feature": "001-realtime-data-ingestion",
+      "legacy": false,
+      "metadata": { "description": "Package marker for pipeline sub-package", "new": true }
+    },
+    {
+      "id": "FILE-backend/pipeline/runner.py",
+      "type": "file",
+      "label": "backend/pipeline/runner.py",
+      "feature": "001-realtime-data-ingestion",
+      "legacy": false,
+      "metadata": { "description": "PipelineRunner: orchestrates fetch → ingest → communities → atomic graph swap + rollback", "new": true }
+    },
+    {
+      "id": "FILE-backend/pipeline/scheduler.py",
+      "type": "file",
+      "label": "backend/pipeline/scheduler.py",
+      "feature": "001-realtime-data-ingestion",
+      "legacy": false,
+      "metadata": { "description": "APScheduler AsyncIOScheduler setup; reads PIPELINE_SCHEDULE_CRON from env", "new": true }
+    },
+    {
+      "id": "FILE-backend/pipeline/store.py",
+      "type": "file",
+      "label": "backend/pipeline/store.py",
+      "feature": "001-realtime-data-ingestion",
+      "legacy": false,
+      "metadata": { "description": "IngestionRun CRUD: create_run, update_run, get_current_run, get_history, recover_orphaned_runs", "new": true }
+    },
+    {
+      "id": "FILE-tests/backend/test_pipeline_runner.py",
+      "type": "file",
+      "label": "tests/backend/test_pipeline_runner.py",
+      "feature": "001-realtime-data-ingestion",
+      "legacy": false,
+      "metadata": { "description": "TDD unit tests for PipelineRunner", "new": true, "test": true }
+    },
+    {
+      "id": "FILE-tests/backend/test_pipeline_store.py",
+      "type": "file",
+      "label": "tests/backend/test_pipeline_store.py",
+      "feature": "001-realtime-data-ingestion",
+      "legacy": false,
+      "metadata": { "description": "TDD unit tests for pipeline store (SQLite)", "new": true, "test": true }
+    },
+    {
+      "id": "FILE-tests/backend/test_pipeline_endpoints.py",
+      "type": "file",
+      "label": "tests/backend/test_pipeline_endpoints.py",
+      "feature": "001-realtime-data-ingestion",
+      "legacy": false,
+      "metadata": { "description": "Integration tests for GET /pipeline/status and POST /pipeline/trigger", "new": true, "test": true }
+    },
+    {
+      "id": "ENT-IngestionRun",
+      "type": "entity",
+      "label": "IngestionRun",
+      "feature": "001-realtime-data-ingestion",
+      "legacy": false,
+      "metadata": {
+        "description": "Pipeline run record: run_id, trigger, started_at, completed_at, status, companies counts, failure_details, rollback_triggered",
+        "store": "sqlite:ingestion_runs"
+      }
+    },
+    {
+      "id": "ENT-PipelineConfig",
+      "type": "entity",
+      "label": "PipelineConfig",
+      "feature": "001-realtime-data-ingestion",
+      "legacy": false,
+      "metadata": {
+        "description": "Runtime configuration: PIPELINE_SCHEDULE_CRON, PIPELINE_ROLLBACK_THRESHOLD, PIPELINE_MAX_HISTORY, PIPELINE_ENABLED",
+        "store": "environment variables"
+      }
+    },
+    {
+      "id": "EP-GET-/pipeline/status",
+      "type": "endpoint",
+      "label": "GET /pipeline/status",
+      "feature": "001-realtime-data-ingestion",
+      "legacy": false,
+      "metadata": {
+        "method": "GET",
+        "path": "/pipeline/status",
+        "description": "Returns is_running, last_successful_at, staleness_warning, current_run, history (last N runs)"
+      }
+    },
+    {
+      "id": "EP-POST-/pipeline/trigger",
+      "type": "endpoint",
+      "label": "POST /pipeline/trigger",
+      "feature": "001-realtime-data-ingestion",
+      "legacy": false,
+      "metadata": {
+        "method": "POST",
+        "path": "/pipeline/trigger",
+        "description": "Manually triggers an immediate pipeline run; 409 if run already in progress"
+      }
+    },
+    {
+      "id": "REQ-FR-001",
+      "type": "requirement",
+      "label": "FR-001: Scheduled fetch",
+      "feature": "001-realtime-data-ingestion",
+      "legacy": false,
+      "metadata": { "description": "Automatically fetch financial data for all 50 companies on configurable schedule" }
+    },
+    {
+      "id": "REQ-FR-002",
+      "type": "requirement",
+      "label": "FR-002: Hot-reload graph",
+      "feature": "001-realtime-data-ingestion",
+      "legacy": false,
+      "metadata": { "description": "Update knowledge graph without server restart" }
+    },
+    {
+      "id": "REQ-FR-003",
+      "type": "requirement",
+      "label": "FR-003: Refresh vector store",
+      "feature": "001-realtime-data-ingestion",
+      "legacy": false,
+      "metadata": { "description": "Update vector store after each successful ingestion run" }
+    },
+    {
+      "id": "REQ-FR-004",
+      "type": "requirement",
+      "label": "FR-004: Run logging",
+      "feature": "001-realtime-data-ingestion",
+      "legacy": false,
+      "metadata": { "description": "Record structured log for every ingestion run" }
+    },
+    {
+      "id": "REQ-FR-005",
+      "type": "requirement",
+      "label": "FR-005: Status queryable",
+      "feature": "001-realtime-data-ingestion",
+      "legacy": false,
+      "metadata": { "description": "Expose queryable status resource with run history" }
+    },
+    {
+      "id": "REQ-FR-006",
+      "type": "requirement",
+      "label": "FR-006: Failure isolation",
+      "feature": "001-realtime-data-ingestion",
+      "legacy": false,
+      "metadata": { "description": "Single company failure must not abort the entire pipeline" }
+    },
+    {
+      "id": "REQ-FR-007",
+      "type": "requirement",
+      "label": "FR-007: Manual trigger",
+      "feature": "001-realtime-data-ingestion",
+      "legacy": false,
+      "metadata": { "description": "Allow operator to trigger a data refresh on demand" }
+    },
+    {
+      "id": "REQ-FR-008",
+      "type": "requirement",
+      "label": "FR-008: No concurrent runs",
+      "feature": "001-realtime-data-ingestion",
+      "legacy": false,
+      "metadata": { "description": "Prevent concurrent pipeline runs" }
+    },
+    {
+      "id": "REQ-FR-009",
+      "type": "requirement",
+      "label": "FR-009: No chat interruption",
+      "feature": "001-realtime-data-ingestion",
+      "legacy": false,
+      "metadata": { "description": "Chat sessions must not be interrupted during pipeline run" }
+    },
+    {
+      "id": "REQ-FR-010",
+      "type": "requirement",
+      "label": "FR-010: Rollback on failure",
+      "feature": "001-realtime-data-ingestion",
+      "legacy": false,
+      "metadata": { "description": "Retain previous graph state if success rate falls below rollback threshold (default 80%)" }
+    },
+    {
+      "id": "REQ-FR-011",
+      "type": "requirement",
+      "label": "FR-011: Refresh timestamp",
+      "feature": "001-realtime-data-ingestion",
+      "legacy": false,
+      "metadata": { "description": "Expose timestamp of last successful refresh" }
+    },
+    {
+      "id": "REQ-FR-012",
+      "type": "requirement",
+      "label": "FR-012: Configurable schedule",
+      "feature": "001-realtime-data-ingestion",
+      "legacy": false,
+      "metadata": { "description": "Schedule configurable via env var, defaulting to Mon-Fri 18:30 IST" }
+    }
+  ],
+  "edges": [
+    {
+      "from": "FILE-backend/main.py",
+      "to": "FILE-backend/retriever.py",
+      "type": "imports",
+      "metadata": { "symbol": "HybridNiftyRetriever" }
+    },
+    {
+      "from": "FILE-frontend/src/main.jsx",
+      "to": "FILE-frontend/src/App.jsx",
+      "type": "imports",
+      "metadata": { "symbol": "App (default export)" }
+    },
+    {
+      "from": "FILE-backend/main.py",
+      "to": "EP-POST-/chat",
+      "type": "exposes",
+      "metadata": {}
+    },
+    {
+      "from": "FILE-backend/main.py",
+      "to": "EP-GET-/health",
+      "type": "exposes",
+      "metadata": {}
+    },
+    {
+      "from": "FILE-backend/main.py",
+      "to": "EP-GET-/sessions",
+      "type": "exposes",
+      "metadata": {}
+    },
+    {
+      "from": "FILE-backend/main.py",
+      "to": "EP-GET-/history/{session_id}",
+      "type": "exposes",
+      "metadata": {}
+    },
+    {
+      "from": "FILE-backend/main.py",
+      "to": "EP-GET-/summary/{session_id}",
+      "type": "exposes",
+      "metadata": {}
+    },
+    {
+      "from": "FILE-backend/main.py",
+      "to": "EP-DELETE-/history/{session_id}",
+      "type": "exposes",
+      "metadata": {}
+    },
+    {
+      "from": "FILE-backend/main.py",
+      "to": "EP-DELETE-/sessions",
+      "type": "exposes",
+      "metadata": {}
+    },
+    {
+      "from": "FILE-frontend/src/App.jsx",
+      "to": "EP-POST-/chat",
+      "type": "depends-on",
+      "metadata": { "call": "fetch POST /chat" }
+    },
+    {
+      "from": "FILE-frontend/src/App.jsx",
+      "to": "EP-GET-/sessions",
+      "type": "depends-on",
+      "metadata": { "call": "fetch GET /sessions" }
+    },
+    {
+      "from": "FILE-frontend/src/App.jsx",
+      "to": "EP-GET-/history/{session_id}",
+      "type": "depends-on",
+      "metadata": { "call": "fetch GET /history/:id" }
+    },
+    {
+      "from": "FILE-frontend/src/App.jsx",
+      "to": "EP-DELETE-/history/{session_id}",
+      "type": "depends-on",
+      "metadata": { "call": "fetch DELETE /history/:id" }
+    },
+    {
+      "from": "FILE-backend/evaluate_rag.py",
+      "to": "EP-POST-/chat",
+      "type": "depends-on",
+      "metadata": { "call": "httpx POST /chat (eval harness)" }
+    },
+    {
+      "from": "FILE-backend/evaluate_rag.py",
+      "to": "EP-GET-/health",
+      "type": "depends-on",
+      "metadata": { "call": "httpx GET /health (pre-eval check)" }
+    },
+    {
+      "from": "FILE-backend/evaluate_rag.py",
+      "to": "EP-DELETE-/history/{session_id}",
+      "type": "depends-on",
+      "metadata": { "call": "httpx DELETE /history/:id (cleanup eval sessions)" }
+    },
+    {
+      "from": "FILE-fetch_data.py",
+      "to": "ENT-Company",
+      "type": "creates",
+      "metadata": { "output": "data/docs/yfinance/*_finance.txt, data/docs/wiki/*_wiki.txt" }
+    },
+    {
+      "from": "FILE-backend/ingest.py",
+      "to": "ENT-KnowledgeGraph",
+      "type": "creates",
+      "metadata": { "output": "data/networkx/nifty_graph.pkl" }
+    },
+    {
+      "from": "FILE-backend/ingest.py",
+      "to": "ENT-VectorStore",
+      "type": "creates",
+      "metadata": { "output": "data/chromadb/ (wiki chunks)" }
+    },
+    {
+      "from": "FILE-backend/ingest.py",
+      "to": "ENT-Company",
+      "type": "creates",
+      "metadata": { "description": "Parses yfinance txt → graph Company nodes" }
+    },
+    {
+      "from": "FILE-backend/ingest.py",
+      "to": "ENT-FinancialMetric",
+      "type": "creates",
+      "metadata": { "description": "VALUE_AT edges for 7 target metrics" }
+    },
+    {
+      "from": "FILE-backend/communities.py",
+      "to": "ENT-CommunitySummary",
+      "type": "creates",
+      "metadata": { "output": "data/communities/community_summaries.json + ChromaDB" }
+    },
+    {
+      "from": "FILE-backend/communities.py",
+      "to": "ENT-VectorStore",
+      "type": "modifies",
+      "metadata": { "description": "Appends community summary documents to existing ChromaDB collection" }
+    },
+    {
+      "from": "FILE-backend/main.py",
+      "to": "ENT-ChatSession",
+      "type": "creates",
+      "metadata": { "description": "Creates and persists chat sessions via SQLChatMessageHistory" }
+    },
+    {
+      "from": "FILE-backend/main.py",
+      "to": "ENT-SessionSummary",
+      "type": "creates",
+      "metadata": { "description": "Background async summarization, upserts session_summaries table" }
+    },
+    {
+      "from": "FILE-backend/retriever.py",
+      "to": "ENT-KnowledgeGraph",
+      "type": "reads",
+      "metadata": { "description": "Loads pickle graph at init, traverses 2-hop neighborhoods" }
+    },
+    {
+      "from": "FILE-backend/retriever.py",
+      "to": "ENT-VectorStore",
+      "type": "reads",
+      "metadata": { "description": "similarity_search for wiki chunks and community summaries" }
+    },
+    {
+      "from": "FILE-backend/retriever.py",
+      "to": "ENT-Company",
+      "type": "reads",
+      "metadata": { "description": "Traverses Company nodes for financials, sector, leadership" }
+    },
+    {
+      "from": "FILE-backend/retriever.py",
+      "to": "ENT-FinancialMetric",
+      "type": "reads",
+      "metadata": { "description": "Formats VALUE_AT edges into financial context strings" }
+    },
+    {
+      "from": "FILE-backend/communities.py",
+      "to": "ENT-KnowledgeGraph",
+      "type": "reads",
+      "metadata": { "description": "Loads graph for Louvain community detection" }
+    },
+    {
+      "from": "FILE-backend/visualize_graph.py",
+      "to": "ENT-KnowledgeGraph",
+      "type": "reads",
+      "metadata": { "description": "Loads graph to render PyVis HTML with color-coded node ontology" }
+    },
+    {
+      "from": "FILE-backend/main.py",
+      "to": "ENT-ChatSession",
+      "type": "reads",
+      "metadata": { "description": "Loads session history as chat_history for history-aware retriever" }
+    },
+    {
+      "from": "FILE-backend/main.py",
+      "to": "ENT-SessionSummary",
+      "type": "reads",
+      "metadata": { "description": "Injects summary as {session_summary} into QA system prompt" }
+    },
+    {
+      "from": "EP-POST-/chat",
+      "to": "ENT-ChatSession",
+      "type": "reads",
+      "metadata": {}
+    },
+    {
+      "from": "EP-POST-/chat",
+      "to": "ENT-SessionSummary",
+      "type": "reads",
+      "metadata": {}
+    },
+    {
+      "from": "EP-GET-/sessions",
+      "to": "ENT-ChatSession",
+      "type": "reads",
+      "metadata": {}
+    },
+    {
+      "from": "EP-GET-/history/{session_id}",
+      "to": "ENT-ChatSession",
+      "type": "reads",
+      "metadata": {}
+    },
+    {
+      "from": "EP-GET-/summary/{session_id}",
+      "to": "ENT-SessionSummary",
+      "type": "reads",
+      "metadata": {}
+    },
+    {
+      "from": "FILE-backend/pipeline/runner.py",
+      "to": "FILE-backend/pipeline/store.py",
+      "type": "imports",
+      "metadata": { "symbol": "create_run, update_run" }
+    },
+    {
+      "from": "FILE-backend/pipeline/runner.py",
+      "to": "FILE-backend/ingest.py",
+      "type": "imports",
+      "metadata": { "symbol": "ingest_all (refactored callable)" }
+    },
+    {
+      "from": "FILE-backend/pipeline/runner.py",
+      "to": "FILE-backend/communities.py",
+      "type": "imports",
+      "metadata": { "symbol": "process_communities (refactored callable)" }
+    },
+    {
+      "from": "FILE-backend/pipeline/runner.py",
+      "to": "FILE-fetch_data.py",
+      "type": "imports",
+      "metadata": { "symbol": "fetch_yfinance_deep, fetch_wiki_full (per-company callable)" }
+    },
+    {
+      "from": "FILE-backend/pipeline/scheduler.py",
+      "to": "FILE-backend/pipeline/runner.py",
+      "type": "imports",
+      "metadata": { "symbol": "PipelineRunner" }
+    },
+    {
+      "from": "FILE-backend/main.py",
+      "to": "FILE-backend/pipeline/runner.py",
+      "type": "imports",
+      "metadata": { "symbol": "PipelineRunner (for manual trigger endpoint)" }
+    },
+    {
+      "from": "FILE-backend/main.py",
+      "to": "FILE-backend/pipeline/scheduler.py",
+      "type": "imports",
+      "metadata": { "symbol": "build_scheduler (lifespan)" }
+    },
+    {
+      "from": "FILE-backend/main.py",
+      "to": "FILE-backend/pipeline/store.py",
+      "type": "imports",
+      "metadata": { "symbol": "get_current_run, get_history, ensure_runs_table, recover_orphaned_runs" }
+    },
+    {
+      "from": "FILE-backend/pipeline/runner.py",
+      "to": "ENT-IngestionRun",
+      "type": "creates",
+      "metadata": {}
+    },
+    {
+      "from": "FILE-backend/pipeline/runner.py",
+      "to": "ENT-KnowledgeGraph",
+      "type": "modifies",
+      "metadata": { "description": "Atomic swap: writes .tmp then renames to live path" }
+    },
+    {
+      "from": "FILE-backend/pipeline/runner.py",
+      "to": "ENT-VectorStore",
+      "type": "modifies",
+      "metadata": { "description": "Full rebuild: wipe and repopulate ChromaDB" }
+    },
+    {
+      "from": "FILE-backend/pipeline/store.py",
+      "to": "ENT-IngestionRun",
+      "type": "creates",
+      "metadata": {}
+    },
+    {
+      "from": "FILE-backend/pipeline/store.py",
+      "to": "ENT-IngestionRun",
+      "type": "reads",
+      "metadata": {}
+    },
+    {
+      "from": "FILE-backend/pipeline/scheduler.py",
+      "to": "ENT-PipelineConfig",
+      "type": "reads",
+      "metadata": { "description": "Reads PIPELINE_SCHEDULE_CRON and PIPELINE_ENABLED from env" }
+    },
+    {
+      "from": "FILE-backend/pipeline/runner.py",
+      "to": "ENT-PipelineConfig",
+      "type": "reads",
+      "metadata": { "description": "Reads PIPELINE_ROLLBACK_THRESHOLD and PIPELINE_REQUEST_TIMEOUT from env" }
+    },
+    {
+      "from": "FILE-backend/main.py",
+      "to": "EP-GET-/pipeline/status",
+      "type": "exposes",
+      "metadata": {}
+    },
+    {
+      "from": "FILE-backend/main.py",
+      "to": "EP-POST-/pipeline/trigger",
+      "type": "exposes",
+      "metadata": {}
+    },
+    {
+      "from": "EP-GET-/pipeline/status",
+      "to": "ENT-IngestionRun",
+      "type": "reads",
+      "metadata": {}
+    },
+    {
+      "from": "EP-POST-/pipeline/trigger",
+      "to": "ENT-IngestionRun",
+      "type": "reads",
+      "metadata": { "description": "Checks for running run before accepting trigger" }
+    },
+    {
+      "from": "FILE-tests/backend/test_pipeline_runner.py",
+      "to": "FILE-backend/pipeline/runner.py",
+      "type": "depends-on",
+      "metadata": { "description": "TDD unit tests" }
+    },
+    {
+      "from": "FILE-tests/backend/test_pipeline_store.py",
+      "to": "FILE-backend/pipeline/store.py",
+      "type": "depends-on",
+      "metadata": { "description": "TDD unit tests" }
+    },
+    {
+      "from": "FILE-tests/backend/test_pipeline_endpoints.py",
+      "to": "FILE-backend/main.py",
+      "type": "depends-on",
+      "metadata": { "description": "Integration tests via FastAPI test client" }
+    },
+    {
+      "from": "REQ-FR-001",
+      "to": "FILE-backend/pipeline/scheduler.py",
+      "type": "implemented-by",
+      "metadata": {}
+    },
+    {
+      "from": "REQ-FR-001",
+      "to": "FILE-backend/pipeline/runner.py",
+      "type": "implemented-by",
+      "metadata": {}
+    },
+    {
+      "from": "REQ-FR-002",
+      "to": "FILE-backend/retriever.py",
+      "type": "implemented-by",
+      "metadata": { "description": "mtime hot-reload in NiftyGraphRetriever" }
+    },
+    {
+      "from": "REQ-FR-003",
+      "to": "FILE-backend/pipeline/runner.py",
+      "type": "implemented-by",
+      "metadata": {}
+    },
+    {
+      "from": "REQ-FR-004",
+      "to": "FILE-backend/pipeline/store.py",
+      "type": "implemented-by",
+      "metadata": {}
+    },
+    {
+      "from": "REQ-FR-005",
+      "to": "EP-GET-/pipeline/status",
+      "type": "implemented-by",
+      "metadata": {}
+    },
+    {
+      "from": "REQ-FR-006",
+      "to": "FILE-backend/pipeline/runner.py",
+      "type": "implemented-by",
+      "metadata": { "description": "Per-company try/except in fetch loop" }
+    },
+    {
+      "from": "REQ-FR-007",
+      "to": "EP-POST-/pipeline/trigger",
+      "type": "implemented-by",
+      "metadata": {}
+    },
+    {
+      "from": "REQ-FR-008",
+      "to": "FILE-backend/pipeline/runner.py",
+      "type": "implemented-by",
+      "metadata": { "description": "asyncio.Lock + SQLite status check" }
+    },
+    {
+      "from": "REQ-FR-009",
+      "to": "FILE-backend/retriever.py",
+      "type": "implemented-by",
+      "metadata": { "description": "Atomic file swap ensures retriever always reads a complete graph" }
+    },
+    {
+      "from": "REQ-FR-010",
+      "to": "FILE-backend/pipeline/runner.py",
+      "type": "implemented-by",
+      "metadata": { "description": "Rollback logic: rename .tmp discard; restore .previous" }
+    },
+    {
+      "from": "REQ-FR-011",
+      "to": "EP-GET-/pipeline/status",
+      "type": "implemented-by",
+      "metadata": { "description": "last_successful_at field in PipelineStatusResponse" }
+    },
+    {
+      "from": "REQ-FR-012",
+      "to": "FILE-backend/pipeline/scheduler.py",
+      "type": "implemented-by",
+      "metadata": { "description": "PIPELINE_SCHEDULE_CRON env var" }
+    }
+  ],
+  "external_dependencies": [
+    { "name": "FastAPI", "type": "framework", "scope": "backend" },
+    { "name": "LangChain (langchain-core, langchain-classic, langchain-community)", "type": "library", "scope": "backend" },
+    { "name": "LangChain-OpenAI (ChatOpenAI via Ollama)", "type": "llm-client", "scope": "backend" },
+    { "name": "Ollama (llama3.2)", "type": "llm-runtime", "scope": "backend" },
+    { "name": "NetworkX", "type": "library", "scope": "backend" },
+    { "name": "ChromaDB (langchain-chroma)", "type": "vector-store", "scope": "backend" },
+    { "name": "HuggingFace Embeddings (BAAI/bge-small-en-v1.5)", "type": "embedding-model", "scope": "backend" },
+    { "name": "yfinance", "type": "data-source", "scope": "data-pipeline" },
+    { "name": "Wikipedia API (wikipediaapi + wikipedia)", "type": "data-source", "scope": "data-pipeline" },
+    { "name": "React 19 + Vite", "type": "framework", "scope": "frontend" },
+    { "name": "TailwindCSS v4", "type": "styling", "scope": "frontend" },
+    { "name": "react-markdown", "type": "library", "scope": "frontend" },
+    { "name": "lucide-react", "type": "library", "scope": "frontend" },
+    { "name": "SQLite (sqlite3)", "type": "database", "scope": "backend" }
+  ]
+}

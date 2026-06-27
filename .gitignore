@@ -38,3 +38,4 @@ nifty_chat_history.db
 chromadb/
 networkx/
 *.pkl
+*.specify
