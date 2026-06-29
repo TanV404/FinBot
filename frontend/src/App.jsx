@@ -54,6 +54,8 @@ const MessageBubble = ({ msg, markDone }) => {
 };
 
 // ── Main App ───────────────────────────────────────────────────────────────────
+const API_BASE = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000';
+
 export default function App() {
   const [sessions, setSessions]       = useState([]);
   const [sessionId, setSessionId]     = useState(null);
@@ -67,7 +69,7 @@ export default function App() {
   // ── Load sessions from backend ──────────────────────────────────────────────
   const fetchSessions = useCallback(async () => {
     try {
-      const res = await fetch('http://127.0.0.1:8000/sessions');
+      const res = await fetch(`${API_BASE}/sessions`);
       if (!res.ok) return;
       const data = await res.json();
       const remote = (data.sessions || []).map(s => ({
@@ -105,7 +107,7 @@ export default function App() {
     const load = async () => {
       setIsLoading(true);
       try {
-        const res = await fetch(`http://127.0.0.1:8000/history/${sessionId}`);
+        const res = await fetch(`${API_BASE}/history/${sessionId}`);
         if (cancelled) return;
         if (res.ok) {
           const data = await res.json();
@@ -155,7 +157,7 @@ export default function App() {
   // ── Delete session ──────────────────────────────────────────────────────────
   const handleDelete = async (e, id) => {
     e.stopPropagation();
-    try { await fetch(`http://127.0.0.1:8000/history/${id}`, { method: 'DELETE' }); } catch (_) {}
+    try { await fetch(`${API_BASE}/history/${id}`, { method: 'DELETE' }); } catch (_) {}
     setSessions(prev => {
       const next = prev.filter(s => s.id !== id);
       if (sessionId === id) {
@@ -191,7 +193,7 @@ export default function App() {
     setIsLoading(true);
 
     try {
-      const res = await fetch('http://127.0.0.1:8000/chat', {
+      const res = await fetch(`${API_BASE}/chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ message: msg, session_id: sessionId }),
@@ -203,7 +205,7 @@ export default function App() {
     } catch (_) {
       setMessages(prev => [...prev, {
         role: 'ai',
-        text: '⚠️ Could not reach the backend. Make sure the server is running on `http://localhost:8000`.',
+        text: `⚠️ Could not reach the backend. Make sure the server is running on \`${API_BASE}\`.`,
         isNew: false,
       }]);
     } finally {
