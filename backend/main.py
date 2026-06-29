@@ -1,10 +1,14 @@
 import json
 import os
+import sys
 import sqlite3
 import traceback
 from contextlib import asynccontextmanager
 from pathlib import Path
 from asyncio import create_task
+
+# Add backend directory to path so imports resolve correctly when run from repository root
+sys.path.append(str(Path(__file__).resolve().parent))
 
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException
