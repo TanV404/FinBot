@@ -8,8 +8,10 @@ from typing import Any, List
 from pydantic import BaseModel, Field, PrivateAttr
 from langchain_core.retrievers import BaseRetriever
 from langchain_core.documents import Document
-from langchain_huggingface import HuggingFaceEmbeddings
-from langchain_chroma import Chroma
+import os
+from huggingface_hub import InferenceClient
+from langchain_core.embeddings import Embeddings
+from langchain_community.vectorstores import Chroma
 
 
 # ── Pydantic schema for LLM structured output ────────────────
@@ -197,6 +199,26 @@ class NiftyGraphRetriever(BaseRetriever):
         return docs
 
 
+class HuggingFaceAPIEmbeddings(Embeddings):
+    """Hugging Face Inference API Embeddings client (lightweight, doesn't load PyTorch or model weights locally)."""
+    def __init__(self, model_name: str = "BAAI/bge-small-en-v1.5"):
+        self.model_name = model_name
+        self.api_key = os.getenv("HF_TOKEN")
+        self.client = InferenceClient(model=model_name, token=self.api_key)
+
+    def embed_documents(self, texts: list[str]) -> list[list[float]]:
+        res = self.client.feature_extraction(texts)
+        if hasattr(res, "tolist"):
+            return res.tolist()
+        return [list(x) for x in res]
+
+    def embed_query(self, text: str) -> list[float]:
+        res = self.client.feature_extraction(text)
+        if hasattr(res, "tolist"):
+            return res.tolist()
+        return list(res)
+
+
 # ── Hybrid retriever (graph + vector) ────────────────────────
 class HybridNiftyRetriever(BaseRetriever):
     graph_path:  str
@@ -209,10 +231,7 @@ class HybridNiftyRetriever(BaseRetriever):
         super().__init__(**kwargs)
         self._graph = NiftyGraphRetriever(graph_path=self.graph_path, llm=self.llm)
 
-        emb = HuggingFaceEmbeddings(
-            model_name="BAAI/bge-small-en-v1.5",
-            model_kwargs={"device": "cpu"},
-        )
+        emb = HuggingFaceAPIEmbeddings()
         self._vector = Chroma(
             persist_directory=self.chroma_path,
             embedding_function=emb,
