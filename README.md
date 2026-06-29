@@ -107,22 +107,3 @@ npm install
 npm run dev
 ```
 The dev server will spin up (typically at `http://localhost:5173`).
-
----
-
-## 🌐 Production Deployment
-
-This project is built to deploy the frontend and backend **separately** for maximum performance and cost efficiency.
-
-### 1. Frontend (Vercel)
-The React application is fully configured for Vercel deployment:
-- Set **Root Directory** to `frontend`.
-- Add an environment variable **`VITE_API_URL`** pointing to your deployed backend (e.g. `https://finbot-backend.up.railway.app`).
-- Vercel automatically reads [frontend/vercel.json](file:///Users/tanvi/Desktop/FinBot/frontend/vercel.json) to handle Clean URLs and single-page routing rewrites.
-
-### 2. Backend (Render / Railway)
-Deploy the Python FastAPI application on a cloud runtime platform (like Render or Railway):
-- Ensure it uses the root directory so it finds `requirements.txt` / `pyproject.toml`.
-- **Start Command**: `uvicorn backend.main:app --host 0.0.0.0 --port $PORT`
-- **Environment Variables**: Make sure to add `GROQ_API_KEY`, `GEMINI_API_KEY`, `HF_TOKEN`, `CHROMA_PATH=data/chromadb`, `NETWORKX_GRAPH_PATH=data/networkx/nifty_graph.pkl`, and `CHAT_DB_URL=sqlite:///./nifty_chat_history.db`.
-- *Note:* The pre-built database assets (`data/chromadb` and `data/networkx`) are committed to Git, so the backend loads instant context upon startup without needing to run Ollama or compile embeddings in the cloud.
