@@ -143,7 +143,7 @@ class FallbackChatModel(BaseChatModel):
         last_err = None
         for model in self.models:
             try:
-                res = model.invoke(messages, stop=stop, config=run_manager.get_child() if run_manager else None, **kwargs)
+                res = model.invoke(messages, stop=stop, **kwargs)
                 return ChatResult(generations=[ChatGeneration(message=res)])
             except Exception as e:
                 print(f"[FallbackLLM] Sync fallback step failed for {model}: {e}")
@@ -156,7 +156,7 @@ class FallbackChatModel(BaseChatModel):
             try:
                 print(f"[FallbackLLM] Attempting async invoke on {model} (timeout={self.timeout}s)...")
                 res = await asyncio.wait_for(
-                    model.ainvoke(messages, stop=stop, config=run_manager.get_child() if run_manager else None, **kwargs),
+                    model.ainvoke(messages, stop=stop, **kwargs),
                     timeout=self.timeout
                 )
                 return ChatResult(generations=[ChatGeneration(message=res)])
