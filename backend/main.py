@@ -201,6 +201,7 @@ def _build_fallback_llm(model_id_groq: str, model_id_gemini: str, model_id_ollam
             api_key=groq_api_key,
             model=model_id_groq,
             temperature=0,
+            timeout=15.0,
         ))
 
     # 2. Gemini Cloud LLM
@@ -212,6 +213,7 @@ def _build_fallback_llm(model_id_groq: str, model_id_gemini: str, model_id_ollam
             api_key=gemini_api_key,
             model=model_id_gemini,
             temperature=0,
+            timeout=15.0,
         ))
 
     # 3. Local Ollama (Default Fallback)
@@ -222,6 +224,7 @@ def _build_fallback_llm(model_id_groq: str, model_id_gemini: str, model_id_ollam
         api_key="ollama",
         model=model_id_ollama,
         temperature=0,
+        timeout=15.0,
     ))
 
     return FallbackChatModel(models=models, timeout=15.0)
