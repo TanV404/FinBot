@@ -169,25 +169,52 @@ async def _maybe_summarize(session_id: str):
 # ─────────────────────────────────────────────
 
 def _build_llm():
-    # hf_token = os.getenv("HF_TOKEN")
-    # if not hf_token:
-    #     raise ValueError("❌ HF_TOKEN missing in .env")
+    # 1. Groq Cloud LLM
+    groq_api_key = os.getenv("GROQ_API_KEY")
+    if groq_api_key:
+        print("[LLM] Initializing Groq Chat Provider")
+        from langchain_groq import ChatGroq
+        return ChatGroq(
+            api_key=groq_api_key,
+            model="llama-3.3-70b-specdec",
+            temperature=0,
+            max_tokens=1200,
+        )
 
-    # return ChatOpenAI(
-    #     base_url="https://router.huggingface.co/v1",
-    #     api_key=hf_token,
-    #     model="Qwen/Qwen2.5-7B-Instruct:together",
-    #     temperature=0,
-    #     max_tokens=1200,
-    # )
+    # 2. Gemini Cloud LLM
+    gemini_api_key = os.getenv("GEMINI_API_KEY")
+    if gemini_api_key:
+        print("[LLM] Initializing Gemini Chat Provider")
+        from langchain_google_genai import ChatGoogleGenAI
+        return ChatGoogleGenAI(
+            api_key=gemini_api_key,
+            model="gemini-1.5-flash",
+            temperature=0,
+            max_output_tokens=1200,
+        )
 
+    # 3. HuggingFace Router Cloud LLM
+    hf_token = os.getenv("HF_TOKEN")
+    if hf_token:
+        print("[LLM] Initializing HuggingFace Router Chat Provider")
+        return ChatOpenAI(
+            base_url="https://router.huggingface.co/v1",
+            api_key=hf_token,
+            model="Qwen/Qwen2.5-7B-Instruct:together",
+            temperature=0,
+            max_tokens=1200,
+        )
+
+    # 4. Local Ollama (Default Fallback)
+    print("[LLM] Initializing Local Ollama Chat Provider")
     return ChatOpenAI(
-    base_url=os.getenv("OLLAMA_BASE_URL", "http://127.0.0.1:11434/v1"),
-    api_key="ollama",
-    model=os.getenv("OLLAMA_MODEL", "llama3.2"),
-    temperature=0,
-    max_tokens=1200,
+        base_url=os.getenv("OLLAMA_BASE_URL", "http://127.0.0.1:11434/v1"),
+        api_key="ollama",
+        model=os.getenv("OLLAMA_MODEL", "llama3.2"),
+        temperature=0,
+        max_tokens=1200,
     )
+
 
 def init_chain():
     global _llm_ref
