@@ -4,6 +4,28 @@ FinBot is a state-of-the-art financial research assistant built using a **Hybrid
 
 ---
 
+## 💬 User Interface & Query Examples
+
+Here are some example query interactions with the FinBot chatbot UI:
+
+### 1. Multi-Company Comparison
+Comparing metrics (e.g., Revenue) between companies:
+![Multi-Company Comparison](screenshots/comparison.png)
+
+### 2. Leadership Query
+Identifying company leadership and roles:
+![Leadership Query](screenshots/leadership.png)
+
+### 3. Sector Distribution
+Analyzing sector lists and distribution properties:
+![Sector Distribution](screenshots/sector.png)
+
+### 4. Robustness / Out-of-Scope Handling
+Gracefully handling out-of-scope queries (e.g., gold prices) according to grounding rules:
+![Robustness / Out-of-Scope](screenshots/robust.png)
+
+---
+
 ## ⚙️ System Design & Architecture
 
 FinBot is designed as a modular web application with an API-driven backend and a responsive single-page frontend.
