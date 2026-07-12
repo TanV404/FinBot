@@ -90,6 +90,7 @@ The backend is powered by **FastAPI** and exposes the following endpoints:
 
 ### 2. Session Handling & Memory
 - **Persistent History**: Message history is stored in SQLite via LangChain's `SQLChatMessageHistory`.
+- **History-Aware Query Reformulation**: The RAG pipeline employs a **History-Aware Retriever** (`create_history_aware_retriever`). It uses conversational context (previous user and bot messages) to reformulate the latest query into a standalone, context-resolved question. This ensures follow-up questions referencing previous companies or topics (e.g., "What was their profit last quarter?" or "Compare it to Infosys") are resolved to the correct entity anchors and documents before querying the databases.
 - **Background Memory Summarization**: To prevent context window bloat during long chats while preserving conversational details, the system executes an asynchronous background task (`_maybe_summarize`) via Python's `asyncio.create_task`.
 - **Summary Updates**: Every 4 turns, the worker compiles the conversation history, uses the LLM to generate a concise summary (max 120 words), and upserts it in the SQLite `session_summaries` table.
 - **Memory Injection**: Upon processing a new query, the latest summary is loaded and injected into the QA system prompt under `session_summary` to provide long-term history context.
