@@ -1,6 +1,12 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Send, Bot, User, Activity, MessageSquare, Plus, Trash2 } from 'lucide-react';
+import { Send, Bot, User, Activity, MessageSquare, Plus, Trash2, LogOut, ShieldAlert } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
+import { createClient } from '@supabase/supabase-js';
+
+// Initialize Supabase client
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://lpjcmbjjtqktzptosvvi.supabase.co';
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'sb_publishable_t7TT7TL40gvYAKFJl5Yw8g_qPZPRXkj';
+const supabaseClient = createClient(supabaseUrl, supabaseAnonKey);
 
 const generateSessionId = () => `session_${Math.random().toString(36).substring(2, 11)}`;
 
@@ -53,23 +59,169 @@ const MessageBubble = ({ msg, markDone }) => {
   );
 };
 
+// ── Auth Screen ───────────────────────────────────────────────────────────────
+function AuthScreen({ onAuthSuccess }) {
+  const [isSignUp, setIsSignUp] = useState(false);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [errorMsg, setErrorMsg] = useState('');
+  const [infoMsg, setInfoMsg] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setErrorMsg('');
+    setInfoMsg('');
+    setLoading(true);
+
+    try {
+      if (isSignUp) {
+        const { error } = await supabaseClient.auth.signUp({ email, password });
+        if (error) throw error;
+        setInfoMsg('Verification email sent! Check your inbox to confirm.');
+      } else {
+        const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
+        if (error) throw error;
+        if (data.session) onAuthSuccess(data.session);
+      }
+    } catch (err) {
+      setErrorMsg(err.message || 'An error occurred.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="min-h-screen w-full flex items-center justify-center bg-[#0B0F19] text-slate-100 relative p-4">
+      {/* Background glow */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-[20%] left-[20%] w-[60%] h-[60%] rounded-full bg-blue-500/[0.08] blur-[130px]" />
+        <div className="absolute bottom-[20%] right-[20%] w-[50%] h-[50%] rounded-full bg-purple-500/[0.08] blur-[130px]" />
+      </div>
+
+      <div className="w-full max-w-md bg-[#12192B]/60 backdrop-blur-2xl border border-white/10 rounded-3xl p-8 shadow-2xl relative z-10 animate-in fade-in zoom-in-95 duration-300">
+        <div className="flex flex-col items-center gap-3 mb-8">
+          <div className="w-12 h-12 bg-blue-600 rounded-2xl flex items-center justify-center shadow-lg shadow-blue-500/30">
+            <Activity className="text-white w-6 h-6" />
+          </div>
+          <h2 className="text-2xl font-bold bg-gradient-to-r from-white to-slate-400 bg-clip-text text-transparent">
+            {isSignUp ? 'Create your Account' : 'Welcome to FinBot'}
+          </h2>
+          <p className="text-xs text-slate-500 text-center">
+            {isSignUp ? 'Sign up to start analyzing NIFTY 50 metrics' : 'Sign in to access your financial research workspace'}
+          </p>
+        </div>
+
+        {errorMsg && (
+          <div className="bg-red-500/10 border border-red-500/20 text-red-400 text-xs p-3.5 rounded-xl mb-5 animate-in fade-in">
+            {errorMsg}
+          </div>
+        )}
+
+        {infoMsg && (
+          <div className="bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs p-3.5 rounded-xl mb-5 animate-in fade-in">
+            {infoMsg}
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="block text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-2 px-1">
+              Email Address
+            </label>
+            <input
+              type="email"
+              value={email}
+              onChange={e => setEmail(e.target.value)}
+              required
+              placeholder="you@example.com"
+              className="w-full bg-[#1E293B]/70 border border-white/10 rounded-xl px-4 py-3 text-sm focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/20 outline-none transition-all"
+            />
+          </div>
+
+          <div>
+            <label className="block text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-2 px-1">
+              Password
+            </label>
+            <input
+              type="password"
+              value={password}
+              onChange={e => setPassword(e.target.value)}
+              required
+              placeholder="••••••••"
+              className="w-full bg-[#1E293B]/70 border border-white/10 rounded-xl px-4 py-3 text-sm focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/20 outline-none transition-all"
+            />
+          </div>
+
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full bg-blue-600 hover:bg-blue-500 disabled:bg-slate-700 text-white font-medium text-sm py-3 rounded-xl transition-all shadow-lg shadow-blue-500/20 hover:scale-[1.01] active:scale-[0.99] cursor-pointer"
+          >
+            {loading ? 'Processing...' : isSignUp ? 'Sign Up' : 'Sign In'}
+          </button>
+        </form>
+
+        <div className="mt-6 text-center">
+          <button
+            onClick={() => {
+              setIsSignUp(!isSignUp);
+              setErrorMsg('');
+              setInfoMsg('');
+            }}
+            className="text-xs text-blue-400 hover:text-blue-300 transition-colors cursor-pointer"
+          >
+            {isSignUp ? 'Already have an account? Sign In' : "Don't have an account? Sign Up"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── Main App ───────────────────────────────────────────────────────────────────
 const API_BASE = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000';
 
 export default function App() {
+  const [session, setSession]         = useState(null);
   const [sessions, setSessions]       = useState([]);
   const [sessionId, setSessionId]     = useState(null);
   const [messages, setMessages]       = useState([]);
   const [input, setInput]             = useState('');
   const [isLoading, setIsLoading]     = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [adminOverlay, setAdminOverlay] = useState(false);
+  const [resetConfirm, setResetConfirm] = useState('');
   const chatRef     = useRef(null);
   const textareaRef = useRef(null);
 
-  // ── Load sessions from backend ──────────────────────────────────────────────
+  // ── Listen for Supabase Auth state changes ───────────────────────────────
+  useEffect(() => {
+    supabaseClient.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+    });
+
+    const { data: { subscription } } = supabaseClient.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const handleLogout = async () => {
+    await supabaseClient.auth.signOut();
+    setSession(null);
+    setSessions([]);
+    setMessages([]);
+  };
+
+  // ── Load sessions from backend (JWT Protected) ──────────────────────────────
   const fetchSessions = useCallback(async () => {
+    if (!session?.access_token) return;
     try {
-      const res = await fetch(`${API_BASE}/sessions`);
+      const res = await fetch(`${API_BASE}/sessions`, {
+        headers: { 'Authorization': `Bearer ${session.access_token}` }
+      });
       if (!res.ok) return;
       const data = await res.json();
       const remote = (data.sessions || []).map(s => ({
@@ -85,7 +237,7 @@ export default function App() {
         return [...localOnly, ...remote];
       });
     } catch (_) { /* server not up yet */ }
-  }, []);
+  }, [session]);
 
   useEffect(() => { fetchSessions(); }, [fetchSessions]);
 
@@ -100,19 +252,20 @@ export default function App() {
     }
   }, [sessions, sessionId]);
 
-  // ── Load history when session changes ──────────────────────────────────────
+  // ── Load history when session changes (JWT Protected) ──────────────────────
   useEffect(() => {
-    if (!sessionId) return;
+    if (!sessionId || !session?.access_token) return;
     let cancelled = false;
     const load = async () => {
       setIsLoading(true);
       try {
-        const res = await fetch(`${API_BASE}/history/${sessionId}`);
+        const res = await fetch(`${API_BASE}/history/${sessionId}`, {
+          headers: { 'Authorization': `Bearer ${session.access_token}` }
+        });
         if (cancelled) return;
         if (res.ok) {
           const data = await res.json();
           if (data.messages?.length > 0) {
-            // Role from backend: 'user' or 'ai' (fixed in main.py)
             setMessages(data.messages.map(m => ({
               role: m.role,
               text: m.content,
@@ -132,7 +285,7 @@ export default function App() {
     };
     load();
     return () => { cancelled = true; };
-  }, [sessionId]);
+  }, [sessionId, session]);
 
   // ── Auto-scroll ─────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -154,10 +307,16 @@ export default function App() {
     setSessionId(s.id);
   };
 
-  // ── Delete session ──────────────────────────────────────────────────────────
+  // ── Delete session (JWT Protected) ──────────────────────────────────────────
   const handleDelete = async (e, id) => {
     e.stopPropagation();
-    try { await fetch(`${API_BASE}/history/${id}`, { method: 'DELETE' }); } catch (_) {}
+    if (!session?.access_token) return;
+    try {
+      await fetch(`${API_BASE}/history/${id}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${session.access_token}` }
+      });
+    } catch (_) {}
     setSessions(prev => {
       const next = prev.filter(s => s.id !== id);
       if (sessionId === id) {
@@ -168,26 +327,25 @@ export default function App() {
     });
   };
 
-  // ── Send message ────────────────────────────────────────────────────────────
+  // ── Send message (JWT Protected) ────────────────────────────────────────────
   const handleSend = async (overrideText) => {
     const msg = (overrideText ?? input).trim();
-    if (!msg || isLoading) return;
+    if (!msg || isLoading || !session?.access_token) return;
     setInput('');
 
     setSessions(prev => prev.map(s => {
-  if (s.id === sessionId) {
-    // If it's still "New Chat", replace with first message
-    const isDefault = s.name === 'New Chat';
-    return {
-      ...s,
-      name: isDefault
-        ? msg.substring(0, 38) + (msg.length > 38 ? '…' : '')
-        : s.name,
-      messageCount: (s.messageCount || 0) + 1,
-    };
-  }
-  return s;
-}));
+      if (s.id === sessionId) {
+        const isDefault = s.name === 'New Chat';
+        return {
+          ...s,
+          name: isDefault
+            ? msg.substring(0, 38) + (msg.length > 38 ? '…' : '')
+            : s.name,
+          messageCount: (s.messageCount || 0) + 1,
+        };
+      }
+      return s;
+    }));
 
     setMessages(prev => [...prev, { role: 'user', text: msg }]);
     setIsLoading(true);
@@ -195,7 +353,10 @@ export default function App() {
     try {
       const res = await fetch(`${API_BASE}/chat`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`
+        },
         body: JSON.stringify({ message: msg, session_id: sessionId }),
       });
       if (!res.ok) throw new Error();
@@ -213,6 +374,28 @@ export default function App() {
     }
   };
 
+  // ── Admin Reset All Database (JWT Admin Protected) ──────────────────────────
+  const handleAdminReset = async () => {
+    if (resetConfirm !== 'RESET' || !session?.access_token) return;
+    try {
+      const res = await fetch(`${API_BASE}/sessions`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${session.access_token}` }
+      });
+      if (res.ok) {
+        setSessions([]);
+        setMessages([{ role: 'ai', text: INTRO_MESSAGE, isNew: true }]);
+        setAdminOverlay(false);
+        setResetConfirm('');
+        handleNewChat();
+      } else {
+        alert('Verification failed or unauthorized action.');
+      }
+    } catch (err) {
+      alert('Error: ' + err.message);
+    }
+  };
+
   const markMessageDone = (idx) =>
     setMessages(prev => prev.map((m, i) => i === idx ? { ...m, isNew: false } : m));
 
@@ -220,7 +403,15 @@ export default function App() {
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); }
   };
 
-  // ── Render ──────────────────────────────────────────────────────────────────
+  // Render Auth Screen if not logged in
+  if (!session) {
+    return <AuthScreen onAuthSuccess={setSession} />;
+  }
+
+  // Parse claims for admin role check
+  const isAdmin = session?.user?.app_metadata?.role === 'admin' || session?.user?.role === 'admin';
+
+  // ── Render Dashboard ──────────────────────────────────────────────────────────
   return (
     <div className="flex h-screen w-full bg-[#0B0F19] text-slate-100 overflow-hidden relative">
       {/* Background glow */}
@@ -237,10 +428,19 @@ export default function App() {
       >
         <div className="flex flex-col h-full p-5 min-w-[17rem]">
 
-          {/* Logo */}
-          <div className="flex items-center gap-3 mb-6 shrink-0">
-            <Activity className="text-blue-400 w-7 h-7 drop-shadow-[0_0_8px_rgba(96,165,250,0.5)]" />
-            <h2 className="text-xl font-bold bg-gradient-to-r from-white to-slate-400 bg-clip-text text-transparent">FinBot</h2>
+          {/* Logo & Logout */}
+          <div className="flex items-center justify-between mb-6 shrink-0">
+            <div className="flex items-center gap-3">
+              <Activity className="text-blue-400 w-7 h-7 drop-shadow-[0_0_8px_rgba(96,165,250,0.5)]" />
+              <h2 className="text-xl font-bold bg-gradient-to-r from-white to-slate-400 bg-clip-text text-transparent">FinBot</h2>
+            </div>
+            <button
+              onClick={handleLogout}
+              className="text-slate-400 hover:text-red-400 p-1.5 rounded-lg hover:bg-slate-800 transition-all cursor-pointer"
+              title="Sign Out"
+            >
+              <LogOut size={16} />
+            </button>
           </div>
 
           {/* New Chat button */}
@@ -248,7 +448,7 @@ export default function App() {
             onClick={handleNewChat}
             className="w-full flex items-center justify-center gap-2 p-2.5 mb-5 rounded-xl
               bg-blue-600 hover:bg-blue-500 text-white text-sm font-medium
-              transition-all shadow-lg shadow-blue-500/20 hover:scale-[1.02] active:scale-[0.98] shrink-0"
+              transition-all shadow-lg shadow-blue-500/20 hover:scale-[1.02] active:scale-[0.98] shrink-0 cursor-pointer"
           >
             <Plus size={16} /> New Chat
           </button>
@@ -265,7 +465,7 @@ export default function App() {
               <button
                 key={s.id}
                 onClick={() => setSessionId(s.id)}
-                className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl transition-all text-left group
+                className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl transition-all text-left group cursor-pointer
                   ${s.id === sessionId
                     ? 'bg-slate-800/90 border border-white/10 text-white'
                     : 'text-slate-400 hover:bg-slate-800/40 hover:text-white'}`}
@@ -274,7 +474,7 @@ export default function App() {
                 <span className="truncate text-xs flex-1">{s.name}</span>
                 <span
                   onClick={(e) => handleDelete(e, s.id)}
-                  className="opacity-0 group-hover:opacity-50 hover:!opacity-100 shrink-0 p-0.5 rounded hover:text-red-400 transition-all"
+                  className="opacity-0 group-hover:opacity-50 hover:!opacity-100 shrink-0 p-0.5 rounded hover:text-red-400 transition-all cursor-pointer"
                   title="Delete chat"
                   role="button"
                 >
@@ -284,10 +484,26 @@ export default function App() {
             ))}
           </div>
 
-          {/* Status */}
-          <div className="pt-4 mt-4 border-t border-white/10 flex items-center gap-2 text-[11px] text-slate-500 shrink-0">
-            <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse shadow-[0_0_6px_#10B981]" />
-            NIFTY 50 · Knowledge Graph Active
+          {/* Admin Panel Button */}
+          {isAdmin && (
+            <button
+              onClick={() => setAdminOverlay(true)}
+              className="w-full flex items-center justify-center gap-2 p-2 rounded-xl mb-4
+                border border-red-500/20 bg-red-500/5 hover:bg-red-500/10 text-red-400 text-xs font-semibold
+                transition-all cursor-pointer"
+            >
+              Admin: Reset Database
+            </button>
+          )}
+
+          {/* User profile */}
+          <div className="border-t border-white/10 pt-4 flex flex-col gap-1.5 shrink-0">
+            <p className="text-[10px] text-slate-500 truncate px-1">Signed in as:</p>
+            <p className="text-xs text-slate-300 truncate font-medium px-1">{session.user.email}</p>
+            <div className="mt-2 flex items-center gap-2 text-[10px] text-slate-500 px-1">
+              <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse shadow-[0_0_6px_#10B981]" />
+              NIFTY 50 · Connected
+            </div>
           </div>
         </div>
       </aside>
@@ -299,7 +515,7 @@ export default function App() {
         <header className="px-5 py-3.5 border-b border-white/10 bg-[#0B0F19]/80 backdrop-blur-md flex items-center gap-3 shrink-0">
           <button
             onClick={() => setSidebarOpen(p => !p)}
-            className="text-slate-400 hover:text-white transition-colors p-1.5 rounded-lg hover:bg-slate-800"
+            className="text-slate-400 hover:text-white transition-colors p-1.5 rounded-lg hover:bg-slate-800 cursor-pointer"
             title="Toggle sidebar"
           >
             <MessageSquare size={17} />
@@ -356,7 +572,7 @@ export default function App() {
               disabled={!input.trim() || isLoading}
               className="bg-blue-600 hover:bg-blue-500 disabled:bg-slate-700 disabled:opacity-40 text-white
                 w-9 h-9 rounded-xl flex items-center justify-center transition-all
-                hover:scale-105 active:scale-95 shrink-0 shadow-lg shadow-blue-500/20"
+                hover:scale-105 active:scale-95 shrink-0 shadow-lg shadow-blue-500/20 cursor-pointer"
             >
               <Send size={15} />
             </button>
@@ -366,6 +582,46 @@ export default function App() {
           </p>
         </div>
       </main>
+
+      {/* ── Admin Reset Overlay Modal ─────────────────────────────────────────── */}
+      {adminOverlay && (
+        <div className="absolute inset-0 bg-[#0B0F19]/80 backdrop-blur-md flex items-center justify-center z-50 p-4 animate-in fade-in">
+          <div className="w-full max-w-md bg-[#12192B] border border-red-500/20 rounded-3xl p-6 shadow-2xl animate-in zoom-in-95 duration-200">
+            <div className="flex items-center gap-3 text-red-400 mb-4">
+              <ShieldAlert size={28} />
+              <h3 className="text-lg font-bold">Administrative Reset</h3>
+            </div>
+            <p className="text-xs text-slate-400 mb-4 leading-relaxed">
+              This action is protected by strict role policies. Executing this will permanently wipe all conversation transcripts and session summaries for <strong>ALL</strong> users in the database.
+            </p>
+            <p className="text-xs text-slate-300 font-semibold mb-4">
+              To proceed, please type <code className="text-red-400 bg-red-400/10 px-1.5 py-0.5 rounded">RESET</code> below:
+            </p>
+            <input
+              type="text"
+              value={resetConfirm}
+              onChange={e => setResetConfirm(e.target.value)}
+              placeholder="RESET"
+              className="w-full bg-[#1E293B] border border-white/10 rounded-xl px-4 py-3 text-sm focus:border-red-500/50 focus:ring-1 focus:ring-red-500/20 outline-none transition-all text-center tracking-widest font-mono mb-5"
+            />
+            <div className="flex gap-3">
+              <button
+                onClick={() => { setAdminOverlay(false); setResetConfirm(''); }}
+                className="flex-1 bg-slate-800 hover:bg-slate-700 text-xs font-semibold py-2.5 rounded-xl transition-all cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleAdminReset}
+                disabled={resetConfirm !== 'RESET'}
+                className="flex-1 bg-red-600 hover:bg-red-500 disabled:bg-slate-700 disabled:opacity-40 text-xs font-semibold py-2.5 rounded-xl transition-all shadow-lg shadow-red-500/20 cursor-pointer"
+              >
+                Execute Reset
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
