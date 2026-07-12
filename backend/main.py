@@ -18,9 +18,12 @@ from pydantic import BaseModel
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_core.messages import SystemMessage, HumanMessage, AIMessage, BaseMessage
 from langchain_core.language_models.chat_models import BaseChatModel
+from langchain_core.runnables import Runnable
+
 from langchain_classic.chains import create_history_aware_retriever, create_retrieval_chain
 from langchain_classic.chains.combine_documents import create_stuff_documents_chain
 from langchain_openai import ChatOpenAI
+from langchain_groq import ChatGroq
 
 from retriever import HybridNiftyRetriever
 from auth import verify_token, verify_admin, get_async_supabase
@@ -37,6 +40,7 @@ _DEFAULT_GRAPH  = str(_HERE.parent / "data" / "networkx" / "nifty_graph.pkl")
 _DEFAULT_CHROMA = str(_HERE.parent / "data" / "chromadb")
 
 nifty_bot = None
+nifty_bots = {}
 _llm_ref  = None   # kept for background summarization
 
 # ─────────────────────────────────────────────
@@ -168,6 +172,24 @@ class FallbackChatModel(BaseChatModel):
                 print(f"[FallbackLLM] Async fallback step failed for {model}: {e}")
                 last_err = e
         raise last_err or RuntimeError("All models in fallback chain failed")
+
+    def with_structured_output(self, schema: Any, **kwargs: Any) -> Runnable:
+        structured_models = []
+
+        for model in self.models:
+            if hasattr(model, "with_structured_output"):
+                structured_models.append(model.with_structured_output(schema, **kwargs))
+            else:
+                structured_models.append(model)
+        
+        if not structured_models:
+            raise NotImplementedError("None of the fallback models support structured output")
+        
+        main_runnable = structured_models[0]
+        if len(structured_models) > 1:
+            return main_runnable.with_fallbacks(structured_models[1:])
+        return main_runnable
+
 
 
 # ─────────────────────────────────────────────

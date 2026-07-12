@@ -41,7 +41,7 @@ graph TD
     User([User]) -->|Send query & session_id| FE[React Frontend]
     FE -->|POST /chat| API[FastAPI Backend]
     
-    subgraph SQLite Database
+    subgraph Supabase Database
         DB_Hist[(Message Store)]
         DB_Sum[(Session Summaries)]
     end
@@ -78,7 +78,18 @@ graph TD
     LLM_SUM -.->|Upsert Summary| DB_Sum
 ```
 
+### 🗺️ Pipeline Flowcharts
+
+#### 1. Ingestion & Indexing Pipeline
+The ingestion pipeline processes raw files, builds a NetworkX Knowledge Graph, detects Louvain communities, embeds document chunks, and synchronizes vector embeddings and summaries with Supabase:
+![Ingestion and Indexing Pipeline](screenshots/Indexing.drawio.png)
+
+#### 2. Query Pipeline & Context Retrieval (History Awareness)
+When a user submits a query, it flows through our dynamic query pipeline which reformulates the question with history-awareness using prior session context, resolves company/sector entities to graph nodes, searches the Supabase vector store, and synthesises the answer:
+![Query and Context Retrieval Pipeline](screenshots/Querying.drawio.png)
+
 ### 1. API Structure
+
 The backend is powered by **FastAPI** and exposes the following endpoints:
 - `POST /chat`: Receives the user message and `session_id`. Orchestrates history retrieval, hybrid RAG context assembly, LLM QA generation, and schedules the background summarizer.
 - `GET /sessions`: Lists all active session IDs, including message counts and first-message content previews.
@@ -89,11 +100,12 @@ The backend is powered by **FastAPI** and exposes the following endpoints:
 - `GET /health`: Returns service health status and chatbot engine readiness.
 
 ### 2. Session Handling & Memory
-- **Persistent History**: Message history is stored in SQLite via LangChain's `SQLChatMessageHistory`.
+- **Persistent History**: Message history is stored in a remote **Supabase Database** and retrieved asynchronously for each conversation thread.
 - **History-Aware Query Reformulation**: The RAG pipeline employs a **History-Aware Retriever** (`create_history_aware_retriever`). It uses conversational context (previous user and bot messages) to reformulate the latest query into a standalone, context-resolved question. This ensures follow-up questions referencing previous companies or topics (e.g., "What was their profit last quarter?" or "Compare it to Infosys") are resolved to the correct entity anchors and documents before querying the databases.
 - **Background Memory Summarization**: To prevent context window bloat during long chats while preserving conversational details, the system executes an asynchronous background task (`_maybe_summarize`) via Python's `asyncio.create_task`.
-- **Summary Updates**: Every 4 turns, the worker compiles the conversation history, uses the LLM to generate a concise summary (max 120 words), and upserts it in the SQLite `session_summaries` table.
+- **Summary Updates**: Every 4 turns, the worker compiles the conversation history, uses the LLM to generate a concise summary (max 120 words), and upserts it in the Supabase `session_summaries` table.
 - **Memory Injection**: Upon processing a new query, the latest summary is loaded and injected into the QA system prompt under `session_summary` to provide long-term history context.
+
 
 ### 3. Fallback Chain & Short-Circuit Optimization
 To optimize latency and handle API failures gracefully, the hybrid retrieval pipeline implements multiple fallbacks:
@@ -111,7 +123,9 @@ To optimize latency and handle API failures gracefully, the hybrid retrieval pip
 FinBot combines the strengths of structured Knowledge Graphs and unstructured Vector Search:
 
 1. **Knowledge Graph (NetworkX)**: Models structured entities (Companies, Sectors, Directors) and quantitative financial metrics (Revenue, Profit, Shareholding %) as nodes and edges.
+   ![NetworkX Knowledge Graph Visualization](screenshots/networkx_graph.png)
 2. **Vector Store (ChromaDB)**: Houses semantic chunks of unstructured company descriptions and Wikipedia records embedded using `BAAI/bge-small-en-v1.5`.
+
 3. **Community Detection & Summarization (Ollama)**: Automatically clusters graph sub-sections (using Louvain communities) and generates summaries using a local LLM (`llama3.2:3b`) to answer multi-hop or macro-level financial queries.
 4. **Hybrid Retrieval**: Standard semantic documents and graph-level properties are retrieved in parallel to compile a comprehensive context window for the user query.
 
@@ -205,10 +219,11 @@ GEMINI_API_KEY=your_gemini_api_key
 OLLAMA_BASE_URL=http://127.0.0.1:11434/v1
 OLLAMA_MODEL=llama3.2:3b
 
-# Paths (Keep defaults for local development)
-NETWORKX_GRAPH_PATH=data/networkx/nifty_graph.pkl
-CHROMA_PATH=data/chromadb
-CHAT_DB_URL=sqlite:///./nifty_chat_history.db
+# Supabase Configurations (Required for DB storage & hybrid vector retriever)
+SUPABASE_URL=your_supabase_url
+SUPABASE_ANON_KEY=your_supabase_anon_key
+SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
+
 
 # HuggingFace Token (For embeddings)
 HF_TOKEN=your_huggingface_token

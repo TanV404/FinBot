@@ -1,0 +1,15 @@
+Using built-in dataset (21 questions)
+
+Checking local knowledge graph resource...
+HF_TOKEN loaded: True
+Local knowledge graph found.
+
+
+======================================================================
+Initializing RAG chain locally for model: qwen...
+======================================================================
+[LLM Builder] Adding Groq model openai/gpt-oss-20b to fallback list
+[LLM Builder] Adding local Ollama model llama3.2:3b to fallback list
+Running 21 evaluations for qwen (concurrency=1, throttle=2.0s)...
+
+[GraphRetriever] Query='What is the current revenue of TCS?' → Anchors=['TCS']

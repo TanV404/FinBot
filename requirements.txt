@@ -45,6 +45,8 @@ distro==1.9.0
     # via
     #   groq
     #   openai
+et-xmlfile==2.0.0
+    # via openpyxl
 fastapi==0.136.1
     # via niftybot (pyproject.toml)
 filelock==3.29.0
@@ -171,6 +173,8 @@ ollama==0.6.2
     # via langchain-ollama
 openai==2.44.0
     # via langchain-openai
+openpyxl==3.1.5
+    # via niftybot (pyproject.toml)
 orjson==3.11.8
     # via
     #   langgraph-sdk

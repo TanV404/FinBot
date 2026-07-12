@@ -5,22 +5,50 @@ End-to-end evaluation harness for the NIFTY Graph RAG chatbot.
 
 Metrics
 -------
-Per-question (LLM-as-judge, scored 1–5):
-  • Faithfulness      – answer is grounded in retrieved context, no hallucinations
-  • Answer Relevance  – answer directly addresses the question asked
-  • Completeness      – all parts of the question are addressed
+Per-question (LLM-as-judge, scored 1-5):
+  - Faithfulness      - answer is grounded in retrieved context, no hallucinations
+  - Answer Relevance  - answer directly addresses the question asked
+  - Completeness      - all parts of the question are addressed
 
 System:
-  • Latency (s)
-  • Anchor hit (did graph retriever surface a relevant node?)
-  • Error rate
+  - Latency (s)
+  - Context Hit       - did the RETRIEVER actually surface the expected entity in
+                         its retrieved documents? (measures retrieval quality)
+  - Answer Mentions Entity - does the final ANSWER text mention the expected entity?
+                         (measures generation/grounding behavior, NOT retrieval —
+                         renamed from the old "anchor_hit" which conflated the two)
+  - Error rate
+
+CHANGELOG (vs. previous version)
+---------------------------------
+- FIX: `res["answer"]` being None (seen with gpt-oss in prior runs) crashed the
+  regex think-tag stripper with a silent TypeError caught by the outer except.
+  Now explicitly checked and raised as a clear, loggable error.
+- FIX: when `result.error` is set, the judge is now SKIPPED entirely instead of
+  scoring a placeholder answer. Previously this could produce misleading 0-scores
+  in the "avg_score" column that look like real (bad) judge scores rather than
+  upstream failures. Failed rows are now unambiguous: no scores, error text visible.
+- FIX: added retry-with-backoff on Groq 429 rate-limit errors instead of failing
+  the question outright (this is what killed qwen's C01 in the last run).
+- FIX: the blanket `sleep(6.0)` before every single question — regardless of
+  provider — is now provider-aware. Ollama (local, no rate limit) doesn't need
+  to be throttled; only Groq-backed models do, and the delay is configurable.
+- NEW: added a real retrieval-quality metric ("context_hit") that inspects what
+  the retriever actually returned, separate from whether the model's answer text
+  happens to mention the entity. This is what "anchor_hit" was implicitly assumed
+  to measure before, but didn't.
+- NEW: comparison-category questions (multiple expected_entities) now also track
+  whether ALL expected entities were hit, not just ANY — "any" was hiding partial
+  answers in comparison questions as full hits.
+- NEW: retrieved context is captured and written to the Excel output per-question
+  for manual debugging, so you can see exactly what the retriever handed the LLM.
 
 Usage
 -----
 python evaluate_rag.py                          # uses defaults (localhost:8000)
-python evaluate_rag.py --host http://x.x.x.x:8000
 python evaluate_rag.py --dataset custom_qs.json
 python evaluate_rag.py --out results.xlsx
+python evaluate_rag.py --throttle-s 2.0          # seconds between Groq-backed calls
 """
 
 import argparse
@@ -36,7 +64,7 @@ from typing import Optional
 
 import httpx
 from dotenv import load_dotenv
-from openai import OpenAI          # lightweight judge – works with Ollama too
+from openai import OpenAI          # lightweight judge - works with Ollama too
 from openpyxl import Workbook
 from openpyxl.styles import (
     Font, PatternFill, Alignment, Border, Side, GradientFill
@@ -56,162 +84,31 @@ load_dotenv()
 # ─────────────────────────────────────────────────────────────────────────────
 
 DEFAULT_DATASET = [
-    # ── Single-company factual ──────────────────────────────────────────────
-    {
-        "id": "F01",
-        "category": "Single-Company Factual",
-        "question": "What is the current revenue of TCS?",
-        "expected_entities": ["TCS"],
-        "ground_truth": None,
-    },
-    {
-        "id": "F02",
-        "category": "Single-Company Factual",
-        "question": "Who leads Reliance Industries?",
-        "expected_entities": ["RELIANCE"],
-        "ground_truth": None,
-    },
-    {
-        "id": "F03",
-        "category": "Single-Company Factual",
-        "question": "What sector does Infosys operate in?",
-        "expected_entities": ["INFY"],
-        "ground_truth": None,
-    },
-    {
-        "id": "F04",
-        "category": "Single-Company Factual",
-        "question": "What is HDFC Bank's net profit for the latest reported quarter?",
-        "expected_entities": ["HDFCBANK"],
-        "ground_truth": None,
-    },
-    {
-        "id": "F05",
-        "category": "Single-Company Factual",
-        "question": "What is the debt-to-equity ratio of Tata Motors?",
-        "expected_entities": ["TATAMOTORS"],
-        "ground_truth": None,
-    },
-    # ── Multi-company comparison ─────────────────────────────────────────────
-    {
-        "id": "C01",
-        "category": "Comparison",
-        "question": "Compare the revenue of TCS and Infosys.",
-        "expected_entities": ["TCS", "INFY"],
-        "ground_truth": None,
-    },
-    {
-        "id": "C02",
-        "category": "Comparison",
-        "question": "Which has a higher market cap, Wipro or HCL Technologies?",
-        "expected_entities": ["WIPRO", "HCLTECH"],
-        "ground_truth": None,
-    },
-    {
-        "id": "C03",
-        "category": "Comparison",
-        "question": "How does HDFC Bank's PAT compare to ICICI Bank?",
-        "expected_entities": ["HDFCBANK", "ICICIBANK"],
-        "ground_truth": None,
-    },
-    # ── Sector / industry queries ────────────────────────────────────────────
-    {
-        "id": "S01",
-        "category": "Sector",
-        "question": "Which NIFTY 50 companies belong to the IT sector?",
-        "expected_entities": ["IT"],
-        "ground_truth": None,
-    },
-    {
-        "id": "S02",
-        "category": "Sector",
-        "question": "List all banking companies in the NIFTY 50.",
-        "expected_entities": ["Banking", "Financial Services"],
-        "ground_truth": None,
-    },
-    {
-        "id": "S03",
-        "category": "Sector",
-        "question": "Which energy sector stocks are part of NIFTY 50?",
-        "expected_entities": ["Energy", "Oil"],
-        "ground_truth": None,
-    },
-    # ── Financial metric ─────────────────────────────────────────────────────
-    {
-        "id": "M01",
-        "category": "Financial Metric",
-        "question": "What is the P/E ratio of Bajaj Finance?",
-        "expected_entities": ["BAJFINANCE"],
-        "ground_truth": None,
-    },
-    {
-        "id": "M02",
-        "category": "Financial Metric",
-        "question": "What is the EPS of Asian Paints?",
-        "expected_entities": ["ASIANPAINT"],
-        "ground_truth": None,
-    },
-    {
-        "id": "M03",
-        "category": "Financial Metric",
-        "question": "What is the dividend yield of Coal India?",
-        "expected_entities": ["COALINDIA"],
-        "ground_truth": None,
-    },
-    # ── Leadership / people ──────────────────────────────────────────────────
-    {
-        "id": "P01",
-        "category": "Leadership",
-        "question": "Who is the CEO of Wipro?",
-        "expected_entities": ["WIPRO"],
-        "ground_truth": None,
-    },
-    {
-        "id": "P02",
-        "category": "Leadership",
-        "question": "Who leads Maruti Suzuki?",
-        "expected_entities": ["MARUTI"],
-        "ground_truth": None,
-    },
-    # ── Shareholding ─────────────────────────────────────────────────────────
-    {
-        "id": "SH01",
-        "category": "Shareholding",
-        "question": "What percentage of ONGC is held by institutions?",
-        "expected_entities": ["ONGC"],
-        "ground_truth": None,
-    },
-    {
-        "id": "SH02",
-        "category": "Shareholding",
-        "question": "What is the insider holding percentage for Sun Pharmaceutical?",
-        "expected_entities": ["SUNPHARMA"],
-        "ground_truth": None,
-    },
-    # ── Out-of-scope / robustness ────────────────────────────────────────────
-    {
-        "id": "R01",
-        "category": "Robustness",
-        "question": "What is the current gold price?",
-        "expected_entities": [],
-        "ground_truth": "Bot should state it does not have this data.",
-    },
-    {
-        "id": "R02",
-        "category": "Robustness",
-        "question": "Summarise the last 5 years of NIFTY performance.",
-        "expected_entities": [],
-        "ground_truth": None,
-    },
-    # ── Multi-turn simulation (treated as standalone) ────────────────────────
-    {
-        "id": "MT01",
-        "category": "Multi-turn Sim",
-        "question": "Tell me about TCS revenue, then compare it with Infosys revenue.",
-        "expected_entities": ["TCS", "INFY"],
-        "ground_truth": None,
-    },
+    {"id": "F01", "category": "Single-Company Factual", "question": "What is the current revenue of TCS?", "expected_entities": ["TCS"], "ground_truth": None},
+    {"id": "F02", "category": "Single-Company Factual", "question": "Who leads Reliance Industries?", "expected_entities": ["RELIANCE"], "ground_truth": None},
+    {"id": "F03", "category": "Single-Company Factual", "question": "What sector does Infosys operate in?", "expected_entities": ["INFY"], "ground_truth": None},
+    {"id": "F04", "category": "Single-Company Factual", "question": "What is HDFC Bank's net profit for the latest reported quarter?", "expected_entities": ["HDFCBANK"], "ground_truth": None},
+    {"id": "F05", "category": "Single-Company Factual", "question": "What is the debt-to-equity ratio of Tata Motors?", "expected_entities": ["TATAMOTORS"], "ground_truth": None},
+    {"id": "C01", "category": "Comparison", "question": "Compare the revenue of TCS and Infosys.", "expected_entities": ["TCS", "INFY"], "ground_truth": None},
+    {"id": "C02", "category": "Comparison", "question": "Which has a higher market cap, Wipro or HCL Technologies?", "expected_entities": ["WIPRO", "HCLTECH"], "ground_truth": None},
+    {"id": "C03", "category": "Comparison", "question": "How does HDFC Bank's PAT compare to ICICI Bank?", "expected_entities": ["HDFCBANK", "ICICIBANK"], "ground_truth": None},
+    {"id": "S01", "category": "Sector", "question": "Which NIFTY 50 companies belong to the IT sector?", "expected_entities": ["IT"], "ground_truth": None},
+    {"id": "S02", "category": "Sector", "question": "List all banking companies in the NIFTY 50.", "expected_entities": ["Banking", "Financial Services"], "ground_truth": None},
+    {"id": "S03", "category": "Sector", "question": "Which energy sector stocks are part of NIFTY 50?", "expected_entities": ["Energy", "Oil"], "ground_truth": None},
+    {"id": "M01", "category": "Financial Metric", "question": "What is the P/E ratio of Bajaj Finance?", "expected_entities": ["BAJFINANCE"], "ground_truth": None},
+    {"id": "M02", "category": "Financial Metric", "question": "What is the EPS of Asian Paints?", "expected_entities": ["ASIANPAINT"], "ground_truth": None},
+    {"id": "M03", "category": "Financial Metric", "question": "What is the dividend yield of Coal India?", "expected_entities": ["COALINDIA"], "ground_truth": None},
+    {"id": "P01", "category": "Leadership", "question": "Who is the CEO of Wipro?", "expected_entities": ["WIPRO"], "ground_truth": None},
+    {"id": "P02", "category": "Leadership", "question": "Who leads Maruti Suzuki?", "expected_entities": ["MARUTI"], "ground_truth": None},
+    {"id": "SH01", "category": "Shareholding", "question": "What percentage of ONGC is held by institutions?", "expected_entities": ["ONGC"], "ground_truth": None},
+    {"id": "SH02", "category": "Shareholding", "question": "What is the insider holding percentage for Sun Pharmaceutical?", "expected_entities": ["SUNPHARMA"], "ground_truth": None},
+    {"id": "R01", "category": "Robustness", "question": "What is the current gold price?", "expected_entities": [], "ground_truth": "Bot should state it does not have this data."},
+    {"id": "R02", "category": "Robustness", "question": "Summarise the last 5 years of NIFTY performance.", "expected_entities": [], "ground_truth": None},
+    {"id": "MT01", "category": "Multi-turn Sim", "question": "Tell me about TCS revenue, then compare it with Infosys revenue.", "expected_entities": ["TCS", "INFY"], "ground_truth": None},
 ]
+
+# Groq-backed model names — used to decide whether to throttle/retry on 429s.
+GROQ_BACKED_MODELS = {"qwen", "openai/gpt-oss"}
 
 # ─────────────────────────────────────────────────────────────────────────────
 # DATA CLASSES
@@ -224,17 +121,20 @@ class EvalResult:
     question: str
     expected_entities: list
     answer: str = ""
+    retrieved_context: str = ""
     latency_s: float = 0.0
     error: Optional[str] = None
 
-    # LLM-judge scores (1–5)
+    # LLM-judge scores (1-5) — left as None (not 0) whenever judging was skipped
     faithfulness: Optional[float] = None
     answer_relevance: Optional[float] = None
     completeness: Optional[float] = None
 
     # Derived
     avg_score: Optional[float] = None
-    anchor_hit: Optional[bool] = None
+    context_hit: Optional[bool] = None        # did the RETRIEVER surface the entity?
+    answer_mentions_entity: Optional[bool] = None  # does the ANSWER text mention it?
+    all_entities_hit: Optional[bool] = None   # for multi-entity (comparison) questions
     judge_reasoning: str = ""
 
 
@@ -253,11 +153,11 @@ Bot Answer: {answer}
 Ground Truth (if available): {ground_truth}
 
 Score these dimensions:
-1. faithfulness      – Is the answer grounded in facts? Does it avoid hallucinations?
+1. faithfulness      - Is the answer grounded in facts? Does it avoid hallucinations?
    (5=fully grounded, 1=fabricated/contradictory)
-2. answer_relevance  – Does the answer directly address what was asked?
+2. answer_relevance  - Does the answer directly address what was asked?
    (5=directly answers, 1=completely off-topic)
-3. completeness      – Are all parts of the question covered?
+3. completeness      - Are all parts of the question covered?
    (5=fully complete, 1=major omissions)
 
 Return ONLY this JSON with integer scores and a short reasoning string (no commas inside the string):
@@ -284,12 +184,12 @@ def judge_answer(
     question: str,
     answer: str,
     ground_truth: Optional[str],
-    model: str = "llama3.2",
+    model: str = "llama3.2:3b",
 ) -> dict:
     """Call LLM judge and parse scores. Returns dict with scores or defaults on failure."""
     prompt = JUDGE_USER.format(
         question=question,
-        answer=answer if answer else "(no answer – error occurred)",
+        answer=answer if answer else "(no answer - error occurred)",
         ground_truth=ground_truth or "N/A",
     )
     try:
@@ -305,19 +205,17 @@ def judge_answer(
         raw = resp.choices[0].message.content.strip()
         raw = re.sub(r"```json|```", "", raw).strip()
 
-        # Primary: clean JSON parse
         try:
             return json.loads(raw)
         except json.JSONDecodeError:
             pass
 
-        # Fallback: extract numeric scores with regex even if JSON is malformed
         def extract_score(key: str) -> Optional[int]:
             m = re.search(rf'"{key}"\s*:\s*([1-5])', raw)
             return int(m.group(1)) if m else None
 
         reasoning_match = re.search(r'"reasoning"\s*:\s*"([^"]*)"', raw)
-        reasoning = reasoning_match.group(1) if reasoning_match else "parse error – scores extracted via regex"
+        reasoning = reasoning_match.group(1) if reasoning_match else "parse error - scores extracted via regex"
 
         scores = {
             "faithfulness":     extract_score("faithfulness"),
@@ -340,58 +238,216 @@ def judge_answer(
         }
 
 
-def check_anchor_hit(answer: str, expected_entities: list) -> Optional[bool]:
-    """Heuristic: did the answer mention at least one expected entity?"""
+def check_context_hit(retrieved_context: str, expected_entities: list) -> Optional[bool]:
+    """
+    Real retrieval-quality metric: did the RETRIEVER's returned documents
+    actually contain the expected entity, regardless of what the LLM did
+    with that context afterward?
+    """
+    if not expected_entities:
+        return None
+    ctx_upper = retrieved_context.upper()
+    return any(e.upper() in ctx_upper for e in expected_entities)
+
+
+def check_answer_mentions_entity(answer: str, expected_entities: list) -> Optional[bool]:
+    """
+    Generation-behavior metric (previously mislabeled 'anchor_hit'): does the
+    final answer TEXT mention the expected entity? This reflects whether the
+    model chose to ground its answer using available context, not whether
+    retrieval succeeded — a model can retrieve the right doc and still hedge.
+    """
     if not expected_entities:
         return None
     ans_upper = answer.upper()
     return any(e.upper() in ans_upper for e in expected_entities)
 
 
-async def call_chat_endpoint(
-    client: httpx.AsyncClient,
-    host: str,
-    question: str,
-    session_id: str,
-    timeout: float = 60.0,
-) -> tuple[str, float]:
-    """POST to /chat and return (answer, latency_seconds)."""
-    t0 = time.perf_counter()
-    try:
-        resp = await client.post(
-            f"{host}/chat",
-            json={"message": question, "session_id": session_id},
-            timeout=timeout,
-        )
-        latency = time.perf_counter() - t0
-        if resp.status_code != 200:
-            raise RuntimeError(
-                f"HTTP {resp.status_code}: {resp.text[:300]}"
-            )
-        data = resp.json()
-        answer = data.get("answer", "")
-        if not answer:
-            print(f"  [warn] Empty answer returned. Full response: {data}")
-        return answer, latency
-    except httpx.TimeoutException:
-        raise RuntimeError(f"Request timed out after {timeout}s — try --timeout 180")
-    except httpx.ConnectError:
-        raise RuntimeError(f"Cannot connect to {host} — is the bot running?")
-    except httpx.RemoteProtocolError as e:
-        raise RuntimeError(f"Protocol error (server closed connection?): {type(e).__name__}")
+def check_all_entities_hit(answer: str, expected_entities: list) -> Optional[bool]:
+    """Stricter version for comparison questions: were ALL entities addressed,
+    not just one? The old metric used `any(...)`, which silently counted a
+    comparison answer that only discussed one of the two companies as a hit."""
+    if not expected_entities or len(expected_entities) < 2:
+        return None
+    ans_upper = answer.upper()
+    return all(e.upper() in ans_upper for e in expected_entities)
+
+
+_active_chain = None
+_last_retrieved_docs: list = []  # populated by the retriever patch below, read after each call
+
+
+def build_local_chain(model_name: str):
+    import os
+    import sys
+    from pathlib import Path
+
+    backend_path = Path(__file__).resolve().parent
+    if str(backend_path) not in sys.path:
+        sys.path.append(str(backend_path))
+
+    from main import _build_fallback_llm, HybridNiftyRetriever, _DEFAULT_GRAPH, _DEFAULT_CHROMA
+    from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
+    from langchain_classic.chains import create_history_aware_retriever, create_retrieval_chain
+    from langchain_classic.chains.combine_documents import create_stuff_documents_chain
+    from langchain_groq import ChatGroq
+    from langchain_openai import ChatOpenAI
+
+    graph_path  = os.getenv("NETWORKX_GRAPH_PATH", _DEFAULT_GRAPH)
+    chroma_path = os.getenv("CHROMA_PATH", _DEFAULT_CHROMA)
+
+    if not Path(graph_path).exists():
+        raise FileNotFoundError(f"Graph missing at {graph_path}")
+
+    groq_api_key = os.getenv("GROQ_API_KEY")
+    ollama_base_url = os.getenv("OLLAMA_BASE_URL", "http://127.0.0.1:11434/v1")
+    ollama_model = os.getenv("OLLAMA_MODEL", "llama3.2:3b")
+
+    # NOTE: fast_llm (query rewriter / entity extraction) is intentionally held
+    # constant across every model comparison here, matching the production plan
+    # (fast path always gpt-oss-20b; only the QA-generation model varies below).
+    # This means retrieval/anchor-resolution quality is NOT a variable between
+    # runs — differences you see in context_hit across models should be small
+    # and mostly noise. If context_hit varies a lot between runs, that's a sign
+    # something about the run itself (rate limiting, truncation) is interfering,
+    # not that one model "retrieves better" than another — retrieval doesn't
+    # depend on the QA model at all in this setup.
+    fast_llm = _build_fallback_llm(
+        model_id_groq="openai/gpt-oss-20b",
+        model_id_ollama=ollama_model
+    )
+
+    if model_name == "qwen":
+        if not groq_api_key:
+            raise ValueError("GROQ_API_KEY is required to evaluate Qwen")
+        qa_llm = ChatGroq(api_key=groq_api_key, model="qwen/qwen3.6-27b", temperature=0, timeout=15.0)
+    elif model_name == "openai/gpt-oss":
+        if not groq_api_key:
+            raise ValueError("GROQ_API_KEY is required to evaluate GPT-OSS")
+        qa_llm = ChatGroq(api_key=groq_api_key, model="openai/gpt-oss-20b", temperature=0, timeout=15.0)
+    elif model_name == "ollama":
+        qa_llm = ChatOpenAI(base_url=ollama_base_url, api_key="ollama", model=ollama_model, temperature=0, timeout=15.0)
+    else:
+        raise ValueError(f"Unknown model name: {model_name}")
+
+    retriever = HybridNiftyRetriever(graph_path=graph_path, chroma_path=chroma_path, llm=fast_llm)
+
+    # Patch: truncate context to stay under Groq's TPM cap, AND capture the
+    # retrieved docs so we can compute a real context_hit metric afterward.
+    original_get_relevant = retriever._get_relevant_documents
+
+    def patched_get_relevant(query: str, **kwargs):
+        global _last_retrieved_docs
+        docs = original_get_relevant(query, **kwargs)
+        for doc in docs:
+            if len(doc.page_content) > 1000:
+                doc.page_content = doc.page_content[:1000] + "\n...(truncated for evaluation)"
+        docs = docs[:4]
+        _last_retrieved_docs = docs  # stash for the eval loop to read
+        return docs
+
+    retriever._get_relevant_documents = patched_get_relevant
+
+    contextualise_prompt = ChatPromptTemplate.from_messages([
+        ("system", "Given a chat history and the latest user question, formulate a standalone "
+                   "query that can be understood without the chat history. Do NOT answer the question."),
+        MessagesPlaceholder("chat_history"),
+        ("human", "{input}"),
+    ])
+
+    qa_prompt = ChatPromptTemplate.from_messages([
+        ("system", """### IDENTITY
+You are FinBot, a high-precision NIFTY 50 analyst. Today's date is May 2026.
+
+### SESSION SUMMARY (prior conversations)
+{session_summary}
+
+### STRICT GROUNDING RULES
+1. **Context Only**: Use ONLY the provided context. If the answer isn't there, say: "I do not have that data in my records."
+2. **Priority**:
+   - Use 'Source: Financial Graph' for hard numbers (Revenue, PAT, Debt).
+   - Use 'Knowledge Base' for general facts or definitions.
+3. **Currency**: Always use '₹' prefix. Format numbers as Cr (Crore) or Bn (Billion).
+4. **Recency**: Always prioritize the most recent date found in the context.
+5. **No Thought Leakage**: Do NOT include raw thinking steps, logic processes, or `<think></think>` blocks in your response. Output only the final clean answer.
+
+### CONTEXT:
+{context}
+"""),
+        MessagesPlaceholder("chat_history"),
+        ("human", "{input}"),
+    ])
+
+    history_retriever = create_history_aware_retriever(fast_llm, retriever, contextualise_prompt)
+    rag_chain = create_retrieval_chain(history_retriever, create_stuff_documents_chain(qa_llm, qa_prompt))
+    return rag_chain
+
+
+async def call_chat_endpoint_local(question: str, model_name: str, max_retries: int = 3) -> tuple[str, str, float]:
+    """
+    Invoke the chain for a single question. Returns (answer, retrieved_context, latency_s).
+    Retries on Groq 429 rate-limit errors with exponential backoff instead of failing outright.
+    """
+    global _active_chain, _last_retrieved_docs
+
+    for attempt in range(max_retries):
+        t0 = time.perf_counter()
+        try:
+            res = await _active_chain.ainvoke({
+                "input": question,
+                "chat_history": [],
+                "session_summary": ""
+            })
+            latency = time.perf_counter() - t0
+
+            answer = res.get("answer")
+            if answer is None:
+                # Previously this crashed the regex step below with a silent
+                # TypeError swallowed by the caller's except block, producing
+                # confusing None-valued rows in the Excel output with no clear
+                # error message. Now it's an explicit, loggable failure.
+                raise ValueError(
+                    "Chain returned no answer content (LLM response had empty/None "
+                    "'answer' — check whether the model's tool-calling/structured "
+                    "output format is compatible with this LangChain integration)"
+                )
+
+            answer = re.sub(r'<think>.*?</think>', '', answer, flags=re.DOTALL).strip()
+
+            retrieved_context = "\n---\n".join(
+                d.page_content for d in _last_retrieved_docs
+            ) if _last_retrieved_docs else ""
+
+            return answer, retrieved_context, latency
+
+        except Exception as e:
+            is_rate_limit = "429" in str(e) or "rate_limit" in str(e).lower()
+            if is_rate_limit and attempt < max_retries - 1:
+                backoff = 2.0 * (attempt + 1)
+                print(f"    [RateLimit] Attempt {attempt+1}/{max_retries} hit 429, "
+                      f"backing off {backoff:.1f}s before retry...")
+                await asyncio.sleep(backoff)
+                continue
+            raise
+
+    raise RuntimeError("Exhausted retries without success (unreachable)")
 
 
 async def run_evaluations(
     dataset: list[dict],
-    host: str,
     judge_model: str,
-    timeout: float,
+    model_name: str,
     concurrency: int,
+    throttle_s: float,
 ) -> list[EvalResult]:
-    """Run all eval questions against the chatbot and judge the answers."""
+    """Run all eval questions against the chatbot locally and judge the answers."""
     judge = build_judge_client()
     results: list[EvalResult] = []
     sem = asyncio.Semaphore(concurrency)
+
+    # Only throttle Groq-backed models — Ollama is local and has no rate limit,
+    # so there's no reason to slow down local-only eval runs.
+    effective_throttle = throttle_s if model_name in GROQ_BACKED_MODELS else 0.0
 
     async def _eval_one(item: dict) -> EvalResult:
         result = EvalResult(
@@ -400,49 +456,52 @@ async def run_evaluations(
             question=item["question"],
             expected_entities=item.get("expected_entities", []),
         )
-        session_id = f"eval-{item['id']}-{uuid.uuid4().hex[:8]}"
 
         async with sem:
-            async with httpx.AsyncClient() as http:
-                try:
-                    answer, latency = await call_chat_endpoint(
-                        http, host, item["question"], session_id, timeout
-                    )
-                    result.answer    = answer
-                    result.latency_s = round(latency, 3)
-                except Exception as e:
-                    result.error     = f"{type(e).__name__}: {e}"
-                    result.answer    = ""
-                    result.latency_s = 0.0
-                    print(f"  [{item['id']}] Chat error: {type(e).__name__}: {e}")
-
-        # Delete the ephemeral eval session so it doesn't pollute the DB
-        try:
-            async with httpx.AsyncClient() as http:
-                await http.delete(f"{host}/history/{session_id}", timeout=10)
-        except Exception:
-            pass
+            try:
+                if effective_throttle:
+                    await asyncio.sleep(effective_throttle)
+                answer, retrieved_context, latency = await call_chat_endpoint_local(
+                    item["question"], model_name
+                )
+                result.answer            = answer
+                result.retrieved_context = retrieved_context
+                result.latency_s         = round(latency, 3)
+            except Exception as e:
+                result.error     = f"{type(e).__name__}: {e}"
+                result.answer    = ""
+                result.latency_s = 0.0
+                print(f"  [{item['id']}] Local Chat error: {type(e).__name__}: {e}")
 
         # ── LLM Judge ──────────────────────────────────────────────────────
-        scores = judge_answer(
-            judge,
-            item["question"],
-            result.answer,
-            item.get("ground_truth"),
-            model=judge_model,
-        )
-        result.faithfulness     = scores.get("faithfulness")
-        result.answer_relevance = scores.get("answer_relevance")
-        result.completeness     = scores.get("completeness")
-        result.judge_reasoning  = scores.get("reasoning", "")
+        # Skip judging entirely on upstream failure — previously a failed call
+        # still got scored against a placeholder answer, which could produce a
+        # low-but-real-looking score (e.g. 0) that's indistinguishable in the
+        # spreadsheet from a genuinely bad model response. Now failures are
+        # unambiguous: no scores at all, error text visible in its own column.
+        if result.error:
+            result.faithfulness = result.answer_relevance = result.completeness = None
+            result.avg_score = None
+            result.judge_reasoning = "Skipped: upstream call failed (see Error column)"
+        else:
+            scores = judge_answer(
+                judge, item["question"], result.answer, item.get("ground_truth"), model=judge_model,
+            )
+            result.faithfulness     = scores.get("faithfulness")
+            result.answer_relevance = scores.get("answer_relevance")
+            result.completeness     = scores.get("completeness")
+            result.judge_reasoning  = scores.get("reasoning", "")
 
-        valid_scores = [s for s in [result.faithfulness, result.answer_relevance, result.completeness] if s is not None]
-        result.avg_score    = round(sum(valid_scores) / len(valid_scores), 2) if valid_scores else None
-        result.anchor_hit   = check_anchor_hit(result.answer, result.expected_entities)
+            valid_scores = [s for s in [result.faithfulness, result.answer_relevance, result.completeness] if s is not None]
+            result.avg_score = round(sum(valid_scores) / len(valid_scores), 2) if valid_scores else None
 
-        flag = "✓" if not result.error else "✗"
-        avg  = f"{result.avg_score:.2f}" if result.avg_score is not None else "N/A"
-        print(f"  [{item['id']}] {flag}  avg={avg}  latency={result.latency_s}s")
+        result.context_hit             = check_context_hit(result.retrieved_context, result.expected_entities)
+        result.answer_mentions_entity  = check_answer_mentions_entity(result.answer, result.expected_entities)
+        result.all_entities_hit        = check_all_entities_hit(result.answer, result.expected_entities)
+
+        flag = "OK" if not result.error else "FAIL"
+        avg_s  = f"{result.avg_score:.2f}" if result.avg_score is not None else "N/A"
+        print(f"  [{item['id']}] {flag}  avg={avg_s}  latency={result.latency_s}s")
         return result
 
     tasks = [_eval_one(item) for item in dataset]
@@ -454,14 +513,13 @@ async def run_evaluations(
 # EXCEL EXPORT
 # ─────────────────────────────────────────────────────────────────────────────
 
-# Colour palette
-C_HEADER_FILL  = "1F3864"   # dark navy
+C_HEADER_FILL  = "1F3864"
 C_HEADER_FONT  = "FFFFFF"
-C_ALT_ROW      = "EBF3FF"   # light blue
+C_ALT_ROW      = "EBF3FF"
 C_WHITE        = "FFFFFF"
-C_GOOD         = "C6EFCE"   # green
-C_MID          = "FFEB9C"   # amber
-C_BAD          = "FFC7CE"   # red
+C_GOOD         = "C6EFCE"
+C_MID          = "FFEB9C"
+C_BAD          = "FFC7CE"
 C_SECTION_FILL = "D6E4F0"
 
 
@@ -491,211 +549,149 @@ def _col_widths(ws, widths: dict):
         ws.column_dimensions[col_letter].width = w
 
 
-def build_excel(results: list[EvalResult], out_path: str):
+_FORMULA_TRIGGER_CHARS = ("=", "+", "-", "@")
+
+
+def _excel_safe(value):
+    """
+    Prevent Excel/openpyxl from misinterpreting text as a formula.
+    Graph documents from retriever.py are formatted like '=== TCS | Company | ... ==='
+    -- any cell value starting with =, +, -, or @ gets treated as a formula on save.
+    Since these workbooks are never opened in real Excel to compute a result, reloading
+    them (e.g. with data_only=True) silently returns None for every such cell -- this is
+    exactly why "Retrieved Context" showed blank for nearly every graph-grounded answer.
+    Prefixing with a leading apostrophe forces plain-text storage instead.
+    """
+    if isinstance(value, str) and value.startswith(_FORMULA_TRIGGER_CHARS):
+        return "'" + value
+    return value
+
+
+def build_excel_comparison(results_dict: dict[str, list[EvalResult]], out_path: str):
     wb = Workbook()
 
-    # ── Sheet 1 – Detailed Results ────────────────────────────────────────
-    ws1 = wb.active
-    ws1.title = "Detailed Results"
+    ws_comp = wb.active
+    ws_comp.title = "Comparison Summary"
+    ws_comp.sheet_view.showGridLines = False
 
-    headers = [
-        "ID", "Category", "Question",
-        "Answer",
-        "Faithfulness\n(1–5)", "Answer Relevance\n(1–5)", "Completeness\n(1–5)",
-        "Avg Score", "Anchor Hit",
-        "Latency (s)", "Error", "Judge Reasoning",
-    ]
-    ws1.append(headers)
-    ws1.row_dimensions[1].height = 36
-
-    for cell in ws1[1]:
-        _header_style(cell)
-
-    border = _thin_border()
-    for i, r in enumerate(results, start=2):
-        row_fill = C_ALT_ROW if i % 2 == 0 else C_WHITE
-        row_data = [
-            r.id, r.category, r.question,
-            r.answer,
-            r.faithfulness, r.answer_relevance, r.completeness,
-            r.avg_score,
-            "Yes" if r.anchor_hit else ("No" if r.anchor_hit is False else "N/A"),
-            r.latency_s, r.error or "", r.judge_reasoning,
-        ]
-        ws1.append(row_data)
-        for j, cell in enumerate(ws1[i]):
-            cell.border    = border
-            cell.font      = Font(name="Arial", size=9)
-            cell.alignment = Alignment(vertical="top", wrap_text=True)
-            # Score columns get conditional colour
-            if j in (4, 5, 6):   # faithfulness, relevance, completeness
-                cell.fill = PatternFill("solid", fgColor=_score_fill(cell.value))
-            elif j == 7:          # avg score
-                cell.fill = PatternFill("solid", fgColor=_score_fill(cell.value))
-            else:
-                cell.fill = PatternFill("solid", fgColor=row_fill)
-            # Error column in red text
-            if j == 10 and cell.value:
-                cell.font = Font(name="Arial", size=9, color="C00000")
-
-    _col_widths(ws1, {
-        "A": 8, "B": 18, "C": 38, "D": 55,
-        "E": 14, "F": 14, "G": 14, "H": 12,
-        "I": 12, "J": 12, "K": 22, "L": 45,
-    })
-    # Freeze pane
-    ws1.freeze_panes = "D2"
-
-    # ── Sheet 2 – Category Summary ────────────────────────────────────────
-    ws2 = wb.create_sheet("Category Summary")
-
-    categories = {}
-    for r in results:
-        cat = r.category
-        if cat not in categories:
-            categories[cat] = {"count": 0, "faith": [], "relevance": [], "complete": [], "latencies": [], "errors": 0, "anchor_hits": 0, "anchor_total": 0}
-        d = categories[cat]
-        d["count"] += 1
-        if r.faithfulness     is not None: d["faith"].append(r.faithfulness)
-        if r.answer_relevance is not None: d["relevance"].append(r.answer_relevance)
-        if r.completeness     is not None: d["complete"].append(r.completeness)
-        if r.latency_s: d["latencies"].append(r.latency_s)
-        if r.error: d["errors"] += 1
-        if r.anchor_hit is not None:
-            d["anchor_total"] += 1
-            if r.anchor_hit: d["anchor_hits"] += 1
-
-    def avg(lst): return round(sum(lst)/len(lst), 2) if lst else None
-
-    cat_headers = [
-        "Category", "# Questions",
-        "Avg Faithfulness", "Avg Answer Relevance", "Avg Completeness",
-        "Avg Score", "Avg Latency (s)", "Error Rate %", "Anchor Hit Rate %",
-    ]
-    ws2.append(cat_headers)
-    for cell in ws2[1]: _header_style(cell)
-    ws2.row_dimensions[1].height = 30
-
-    for i, (cat, d) in enumerate(categories.items(), start=2):
-        f   = avg(d["faith"])
-        rel = avg(d["relevance"])
-        com = avg(d["complete"])
-        all_avgs = [x for x in [f, rel, com] if x is not None]
-        overall = round(sum(all_avgs)/len(all_avgs), 2) if all_avgs else None
-        lat = avg(d["latencies"])
-        err_rate = round(d["errors"] / d["count"] * 100, 1) if d["count"] else 0
-        anc_rate = round(d["anchor_hits"] / d["anchor_total"] * 100, 1) if d["anchor_total"] else None
-
-        row_fill = C_ALT_ROW if i % 2 == 0 else C_WHITE
-        ws2.append([cat, d["count"], f, rel, com, overall, lat, err_rate,
-                    anc_rate if anc_rate is not None else "N/A"])
-        for j, cell in enumerate(ws2[i]):
-            cell.border    = border
-            cell.font      = Font(name="Arial", size=9)
-            cell.alignment = Alignment(horizontal="center", vertical="center")
-            if j in (2, 3, 4, 5):
-                cell.fill = PatternFill("solid", fgColor=_score_fill(cell.value))
-            else:
-                cell.fill = PatternFill("solid", fgColor=row_fill)
-
-    _col_widths(ws2, {
-        "A": 22, "B": 14, "C": 18, "D": 20, "E": 18,
-        "F": 14, "G": 16, "H": 14, "I": 16,
-    })
-
-    # ── Sheet 3 – Overall KPIs ────────────────────────────────────────────
-    ws3 = wb.create_sheet("Overall KPIs")
-    ws3.sheet_view.showGridLines = False
-
-    def kpi_row(ws, label, value, row, value_fmt=None, score=False):
-        lc = ws.cell(row=row, column=2, value=label)
-        vc = ws.cell(row=row, column=3, value=value)
-        lc.font      = Font(name="Arial", size=10, bold=True)
-        lc.alignment = Alignment(horizontal="left", vertical="center")
-        lc.fill      = PatternFill("solid", fgColor=C_SECTION_FILL)
-        vc.font      = Font(name="Arial", size=12, bold=True)
-        vc.alignment = Alignment(horizontal="center", vertical="center")
-        if score and isinstance(value, (int, float)):
-            vc.fill = PatternFill("solid", fgColor=_score_fill(value))
-        else:
-            vc.fill = PatternFill("solid", fgColor=C_WHITE)
-        lc.border = border; vc.border = border
-        ws.row_dimensions[row].height = 22
-
-    ws3.column_dimensions["A"].width = 3
-    ws3.column_dimensions["B"].width = 35
-    ws3.column_dimensions["C"].width = 20
-
-    ws3.merge_cells("B1:C1")
-    title_cell = ws3["B1"]
-    title_cell.value     = "📊  NIFTY RAG Chatbot — Evaluation Summary"
+    ws_comp.merge_cells("B1:I1")
+    title_cell = ws_comp["B1"]
+    title_cell.value     = "NIFTY RAG Chatbot - Model Comparison"
     title_cell.font      = Font(name="Arial", size=14, bold=True, color=C_HEADER_FONT)
     title_cell.fill      = PatternFill("solid", fgColor=C_HEADER_FILL)
     title_cell.alignment = Alignment(horizontal="center", vertical="center")
-    ws3.row_dimensions[1].height = 32
+    ws_comp.row_dimensions[1].height = 32
 
-    # Compute KPIs
-    all_faith   = [r.faithfulness     for r in results if r.faithfulness     is not None]
-    all_rel     = [r.answer_relevance for r in results if r.answer_relevance is not None]
-    all_comp    = [r.completeness     for r in results if r.completeness     is not None]
-    all_lat     = [r.latency_s        for r in results if r.latency_s]
-    all_avgs    = [r.avg_score        for r in results if r.avg_score        is not None]
-    errors      = [r for r in results if r.error]
-    anchor_q    = [r for r in results if r.anchor_hit is not None]
-    anchor_hit  = [r for r in anchor_q if r.anchor_hit]
+    comp_headers = [
+        "Model", "Avg Score\n(1-5)", "Faithfulness\n(1-5)",
+        "Answer Relevance\n(1-5)", "Completeness\n(1-5)",
+        "Avg Latency\n(s)", "Context Hit\nRate %", "Answer Mentions\nEntity %", "Error Rate\n%"
+    ]
 
-    kpi_row(ws3, "Total Questions Evaluated",   len(results),                          row=3)
-    kpi_row(ws3, "Questions With Errors",        len(errors),                           row=4)
-    kpi_row(ws3, "Error Rate",                   f"{round(len(errors)/len(results)*100,1)}%", row=5)
-    kpi_row(ws3, "─── Retrieval ───────────────", "", row=6)
-    kpi_row(ws3, "Anchor Hit Rate",              f"{round(len(anchor_hit)/len(anchor_q)*100,1)}%" if anchor_q else "N/A", row=7)
-    kpi_row(ws3, "Avg Latency (s)",              round(avg(all_lat) or 0, 2),           row=8)
-    kpi_row(ws3, "P90 Latency (s)",              round(sorted(all_lat)[int(len(all_lat)*0.9)] if all_lat else 0, 2), row=9)
-    kpi_row(ws3, "─── LLM-Judge Scores ────────", "", row=10)
-    kpi_row(ws3, "Avg Faithfulness (1–5)",       round(avg(all_faith) or 0, 2),         row=11, score=True)
-    kpi_row(ws3, "Avg Answer Relevance (1–5)",   round(avg(all_rel) or 0, 2),           row=12, score=True)
-    kpi_row(ws3, "Avg Completeness (1–5)",       round(avg(all_comp) or 0, 2),          row=13, score=True)
-    kpi_row(ws3, "Overall Avg Score (1–5)",      round(avg(all_avgs) or 0, 2),          row=14, score=True)
+    border = _thin_border()
 
-    ws3.row_dimensions[6].height  = 16
-    ws3.row_dimensions[10].height = 16
+    ws_comp.row_dimensions[3].height = 28
+    for col_idx, header in enumerate(comp_headers, start=2):
+        cell = ws_comp.cell(row=3, column=col_idx, value=header)
+        _header_style(cell)
+        cell.border = border
 
-    # ── Sheet 4 – Score Distribution chart data ───────────────────────────
-    ws4 = wb.create_sheet("Charts Data")
-    ws4.append(["Score Band", "Count", "% of Total"])
-    bands = {"1 (Very Poor)": 0, "2 (Poor)": 0, "3 (Fair)": 0, "4 (Good)": 0, "5 (Excellent)": 0}
-    for r in results:
-        if r.avg_score is not None:
-            band = min(5, max(1, round(r.avg_score)))
-            key = {1: "1 (Very Poor)", 2: "2 (Poor)", 3: "3 (Fair)", 4: "4 (Good)", 5: "5 (Excellent)"}[band]
-            bands[key] += 1
-    total_scored = sum(bands.values())
-    for band, cnt in bands.items():
-        ws4.append([band, cnt, f"=B{ws4.max_row}/B{ws4.max_row - 4 + 1 + list(bands.keys()).index(band) + 1 - list(bands.keys()).index(band)}"])
+    def avg(lst): return round(sum(lst)/len(lst), 2) if lst else None
 
-    # Fix the percentage formula properly
-    for i, (band, cnt) in enumerate(bands.items(), start=2):
-        ws4[f"C{i}"] = f"=B{i}/{total_scored}" if total_scored else 0
-        ws4[f"C{i}"].number_format = "0.0%"
+    for row_idx, (model_name, results) in enumerate(results_dict.items(), start=4):
+        all_faith   = [r.faithfulness     for r in results if r.faithfulness     is not None]
+        all_rel     = [r.answer_relevance for r in results if r.answer_relevance is not None]
+        all_comp    = [r.completeness     for r in results if r.completeness     is not None]
+        all_lat     = [r.latency_s        for r in results if r.latency_s]
+        all_avgs    = [r.avg_score        for r in results if r.avg_score        is not None]
+        errors      = [r for r in results if r.error]
 
-    # Add bar chart
-    chart = BarChart()
-    chart.type        = "col"
-    chart.title       = "Score Distribution (Avg Score)"
-    chart.y_axis.title = "Number of Questions"
-    chart.x_axis.title = "Score Band"
-    chart.shape = 4
-    chart.width  = 18
-    chart.height = 12
+        ctx_q       = [r for r in results if r.context_hit is not None]
+        ctx_hit     = [r for r in ctx_q if r.context_hit]
+        ans_q       = [r for r in results if r.answer_mentions_entity is not None]
+        ans_hit     = [r for r in ans_q if r.answer_mentions_entity]
 
-    data_ref = Reference(ws4, min_col=2, min_row=1, max_row=6)
-    cats_ref = Reference(ws4, min_col=1, min_row=2, max_row=6)
-    chart.add_data(data_ref, titles_from_data=True)
-    chart.set_categories(cats_ref)
-    ws4.add_chart(chart, "E2")
+        avg_score = avg(all_avgs) or 0
+        f = avg(all_faith) or 0
+        rel = avg(all_rel) or 0
+        com = avg(all_comp) or 0
+        lat = avg(all_lat) or 0
+        context_hit_rate = round(len(ctx_hit)/len(ctx_q)*100, 1) if ctx_q else 0
+        answer_hit_rate  = round(len(ans_hit)/len(ans_q)*100, 1) if ans_q else 0
+        error_rate = round(len(errors)/len(results)*100, 1)
+
+        row_fill = C_ALT_ROW if row_idx % 2 == 0 else C_WHITE
+        ws_comp.row_dimensions[row_idx].height = 24
+
+        data = [model_name, avg_score, f, rel, com, lat, f"{context_hit_rate}%", f"{answer_hit_rate}%", f"{error_rate}%"]
+        for col_idx, val in enumerate(data, start=2):
+            cell = ws_comp.cell(row=row_idx, column=col_idx, value=val)
+            cell.border = border
+            cell.font = Font(name="Arial", size=10, bold=(col_idx == 2 or col_idx == 3))
+            cell.alignment = Alignment(horizontal="center", vertical="center")
+            if col_idx in (3, 4, 5, 6):
+                cell.fill = PatternFill("solid", fgColor=_score_fill(val if isinstance(val, (int, float)) else None))
+            else:
+                cell.fill = PatternFill("solid", fgColor=row_fill)
+
+    ws_comp.column_dimensions["B"].width = 20
+    ws_comp.column_dimensions["C"].width = 15
+    ws_comp.column_dimensions["D"].width = 16
+    ws_comp.column_dimensions["E"].width = 18
+    ws_comp.column_dimensions["F"].width = 16
+    ws_comp.column_dimensions["G"].width = 16
+    ws_comp.column_dimensions["H"].width = 18
+    ws_comp.column_dimensions["I"].width = 14
+
+    for model_name, results in results_dict.items():
+        ws = wb.create_sheet(f"{model_name.replace('/', '_')} Details")
+
+        headers = [
+            "ID", "Category", "Question", "Answer", "Retrieved Context",
+            "Faithfulness\n(1-5)", "Answer Relevance\n(1-5)", "Completeness\n(1-5)",
+            "Avg Score", "Context Hit", "Answer Mentions\nEntity", "All Entities\nHit",
+            "Latency (s)", "Error", "Judge Reasoning",
+        ]
+        ws.append(headers)
+        ws.row_dimensions[1].height = 36
+        for cell in ws[1]:
+            _header_style(cell)
+
+        def _bool_str(v):
+            return "Yes" if v is True else ("No" if v is False else "N/A")
+
+        for i, r in enumerate(results, start=2):
+            row_fill = C_ALT_ROW if i % 2 == 0 else C_WHITE
+            context_display = (r.retrieved_context[:500] + "...") if len(r.retrieved_context) > 500 else r.retrieved_context
+            row_data = [
+                _excel_safe(r.id), r.category, r.question, _excel_safe(r.answer),
+                _excel_safe(context_display),
+                r.faithfulness, r.answer_relevance, r.completeness, r.avg_score,
+                _bool_str(r.context_hit), _bool_str(r.answer_mentions_entity), _bool_str(r.all_entities_hit),
+                r.latency_s, r.error or "", r.judge_reasoning,
+            ]
+            ws.append(row_data)
+            for j, cell in enumerate(ws[i]):
+                cell.border    = border
+                cell.font      = Font(name="Arial", size=9)
+                cell.alignment = Alignment(vertical="top", wrap_text=True)
+                if j in (6, 7, 8, 9):
+                    cell.fill = PatternFill("solid", fgColor=_score_fill(cell.value))
+                else:
+                    cell.fill = PatternFill("solid", fgColor=row_fill)
+                if j == 14 and cell.value:
+                    cell.font = Font(name="Arial", size=9, color="C00000")
+
+        _col_widths(ws, {
+            "A": 8, "B": 18, "C": 38, "D": 45, "E": 45,
+            "F": 12, "G": 12, "H": 12, "I": 10,
+            "J": 11, "K": 13, "L": 11,
+            "M": 10, "N": 22, "O": 40,
+        })
+        ws.freeze_panes = "D2"
 
     wb.save(out_path)
-    print(f"\n✅ Results exported to: {out_path}")
+    print(f"\nComparative Excel exported to: {out_path}")
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -704,62 +700,82 @@ def build_excel(results: list[EvalResult], out_path: str):
 
 def parse_args():
     p = argparse.ArgumentParser(description="Evaluate NIFTY Graph RAG chatbot")
-    p.add_argument("--host",        default="http://127.0.0.1:8000", help="Backend base URL")
     p.add_argument("--dataset",     default=None, help="Path to custom JSON dataset file")
-    p.add_argument("--out",         default="rag_eval_results.xlsx", help="Output Excel file path")
-    p.add_argument("--judge-model", default=os.getenv("OLLAMA_MODEL", "llama3.2"), help="LLM model for judge")
-    p.add_argument("--timeout",     default=300.0, type=float, help="Per-question HTTP timeout (s)")
-    p.add_argument("--concurrency", default=2, type=int, help="Number of parallel requests")
+    p.add_argument("--out",         default="rag_eval_comparison.xlsx", help="Output Excel file path")
+    p.add_argument("--judge-model", default="llama3.2:3b", help="LLM model for judge")
+    p.add_argument("--concurrency", default=1, type=int, help="Number of parallel requests")
+    p.add_argument("--throttle-s",  default=2.0, type=float,
+                   help="Seconds to wait between requests for Groq-backed models only "
+                        "(ollama runs are never throttled). Lower this if you're not "
+                        "hitting rate limits; raise it if you are.")
     return p.parse_args()
 
 
 async def main():
+    import sys
     args = parse_args()
 
-    # Load dataset
     if args.dataset:
         with open(args.dataset) as f:
             dataset = json.load(f)
-        print(f"📂 Loaded {len(dataset)} questions from {args.dataset}")
+        print(f"Loaded {len(dataset)} questions from {args.dataset}")
     else:
         dataset = DEFAULT_DATASET
-        print(f"📋 Using built-in dataset ({len(dataset)} questions)")
+        print(f"Using built-in dataset ({len(dataset)} questions)")
 
-    # Health check
-    print(f"\n🔍 Checking bot health at {args.host}...")
-    try:
-        async with httpx.AsyncClient() as c:
-            resp = await c.get(f"{args.host}/health", timeout=10)
-            health = resp.json()
-        if not health.get("engine_ready"):
-            print("⚠️  Warning: engine_ready=False. Bot may still be initialising.")
-        else:
-            print("✅ Bot is ready.\n")
-    except Exception as e:
-        print(f"❌ Health check failed: {e}")
-        print("   Proceeding anyway – individual questions may fail.\n")
+    print("\nChecking local knowledge graph resource...")
+    from main import _DEFAULT_GRAPH
+    graph_path = os.getenv("NETWORKX_GRAPH_PATH", _DEFAULT_GRAPH)
+    if os.path.exists(graph_path):
+        print("Local knowledge graph found.\n")
+    else:
+        print(f"Knowledge graph missing at {graph_path}\n")
+        sys.exit(1)
 
-    print(f"⚡ Running {len(dataset)} evaluations  (concurrency={args.concurrency})…\n")
-    results = await run_evaluations(
-        dataset     = dataset,
-        host        = args.host,
-        judge_model = args.judge_model,
-        timeout     = args.timeout,
-        concurrency = args.concurrency,
-    )
+    eval_models = ["qwen", "openai/gpt-oss", "ollama"]
+    results_dict = {}
 
-    # Console summary
-    scored = [r for r in results if r.avg_score is not None]
-    errors = [r for r in results if r.error]
-    print("\n" + "="*55)
-    print(f"  Questions : {len(results)}")
-    print(f"  Errors    : {len(errors)}")
-    if scored:
-        avgs = [r.avg_score for r in scored]
-        print(f"  Avg Score : {round(sum(avgs)/len(avgs), 2)} / 5")
-    print("="*55)
+    for model in eval_models:
+        print("\n" + "="*70)
+        print(f"Initializing RAG chain locally for model: {model}...")
+        print("="*70)
 
-    build_excel(results, args.out)
+        global _active_chain
+        try:
+            _active_chain = build_local_chain(model)
+        except Exception as e:
+            print(f"Failed to build RAG chain for model '{model}': {e}")
+            continue
+
+        print(f"Running {len(dataset)} evaluations for {model} (concurrency={args.concurrency}, "
+              f"throttle={args.throttle_s if model in GROQ_BACKED_MODELS else 0}s)...\n")
+        results = await run_evaluations(
+            dataset     = dataset,
+            judge_model = args.judge_model,
+            model_name  = model,
+            concurrency = args.concurrency,
+            throttle_s  = args.throttle_s,
+        )
+        results_dict[model] = results
+
+    print("\n" + "="*75)
+    print(" RAG EVALUATION COMPARATIVE SUMMARY REPORT")
+    print("="*75)
+    print(f"{'Model':<18} | {'Avg Score':<10} | {'Faithfulness':<12} | {'Relevance':<10} | {'Completeness':<12} | {'Avg Lat':<7}")
+    print("-"*75)
+    for model_name, results in results_dict.items():
+        all_faith   = [r.faithfulness     for r in results if r.faithfulness     is not None]
+        all_rel     = [r.answer_relevance for r in results if r.answer_relevance is not None]
+        all_comp    = [r.completeness     for r in results if r.completeness     is not None]
+        all_lat     = [r.latency_s        for r in results if r.latency_s]
+        all_avgs    = [r.avg_score        for r in results if r.avg_score        is not None]
+
+        def avg(lst): return round(sum(lst)/len(lst), 2) if lst else 0.00
+
+        print(f"{model_name:<18} | {avg(all_avgs):<10.2f} | {avg(all_faith):<12.2f} | {avg(all_rel):<10.2f} | {avg(all_comp):<12.2f} | {avg(all_lat):<7.2f}s")
+    print("="*75)
+
+    build_excel_comparison(results_dict, args.out)
 
 
 if __name__ == "__main__":

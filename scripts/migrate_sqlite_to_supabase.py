@@ -9,11 +9,12 @@ load_dotenv()
 
 SUPABASE_URL = os.getenv("SUPABASE_URL")
 SUPABASE_SERVICE_ROLE_KEY = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
+SUPABASE_ANON_KEY = os.getenv("SUPABASE_ANON_KEY")
 
-if not SUPABASE_URL or not SUPABASE_SERVICE_ROLE_KEY:
-    raise ValueError("❌ SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY must be configured in environment")
+if not SUPABASE_URL or not (SUPABASE_SERVICE_ROLE_KEY or SUPABASE_ANON_KEY):
+    raise ValueError("❌ SUPABASE_URL and either SUPABASE_SERVICE_ROLE_KEY or SUPABASE_ANON_KEY must be configured in environment")
 
-supabase: Client = create_client(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
+supabase: Client = create_client(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY or SUPABASE_ANON_KEY)
 
 # Path to SQLite DB
 BASE_DIR = Path(__file__).resolve().parent.parent
