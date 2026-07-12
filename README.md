@@ -12,15 +12,19 @@ Here are some example query interactions with the FinBot chatbot UI:
 Comparing metrics (e.g., Revenue) between companies:
 ![Multi-Company Comparison](screenshots/comparison.png)
 
-### 2. Leadership Query
-Identifying company leadership and roles:
-![Leadership Query](screenshots/leadership.png)
+### 2. Single-Company Factual Query
+Retrieving specific corporate data or metrics:
+![Single-Company Factual](screenshots/factual.png)
 
 ### 3. Sector Distribution
 Analyzing sector lists and distribution properties:
 ![Sector Distribution](screenshots/sector.png)
 
-### 4. Robustness / Out-of-Scope Handling
+### 4. Shareholding Analysis
+Visualizing and querying company shareholding distributions:
+![Shareholding Analysis](screenshots/shareholding.png)
+
+### 5. Robustness / Out-of-Scope Handling
 Gracefully handling out-of-scope queries (e.g., gold prices) according to grounding rules:
 ![Robustness / Out-of-Scope](screenshots/robust.png)
 
