@@ -118,6 +118,10 @@ async def _maybe_summarize(session_id: str, user_id: str):
         result = await _llm_ref.ainvoke(SUMMARY_PROMPT.format(conversation=transcript))
         summary_text = result.content.strip()
 
+        # Programmatically strip reasoning / think tags from summary text
+        import re
+        summary_text = re.sub(r'<think>.*?</think>', '', summary_text, flags=re.DOTALL).strip()
+
         if summary_text:
             await _save_summary(session_id, summary_text, user_id)
             print(f"[Summarizer] Session '{session_id}' updated ({len(user_turns)} turns).")
@@ -347,6 +351,10 @@ async def chat(req: ChatRequest, user: dict = Depends(verify_token)):
             }
         )
         answer = result["answer"]
+
+        # Programmatically strip reasoning / think tags from output response
+        import re
+        answer = re.sub(r'<think>.*?</think>', '', answer, flags=re.DOTALL).strip()
 
         # Insert new messages to Supabase asynchronously
         await client.table("messages").insert([
