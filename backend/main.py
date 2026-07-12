@@ -176,10 +176,11 @@ def _build_llm():
         from langchain_groq import ChatGroq
         return ChatGroq(
             api_key=groq_api_key,
-            model="llama-3.3-70b-specdec",
+            model="llama-3.3-70b-versatile",
             temperature=0,
             max_tokens=1200,
         )
+
 
     # 2. Gemini Cloud LLM
     gemini_api_key = os.getenv("GEMINI_API_KEY")
