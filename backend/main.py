@@ -69,8 +69,8 @@ _llm_ref  = None   # kept for background summarization
 # DB HELPERS
 # ─────────────────────────────────────────────
 
-def _ensure_summaries_table():
-    """Create the session_summaries table if it doesn't exist."""
+def _ensure_db_tables():
+    """Create the session_summaries and message_store tables if they don't exist."""
     with sqlite3.connect(_db_path) as con:
         con.execute("""
             CREATE TABLE IF NOT EXISTS session_summaries (
@@ -79,7 +79,15 @@ def _ensure_summaries_table():
                 updated_at   DATETIME DEFAULT CURRENT_TIMESTAMP
             )
         """)
+        con.execute("""
+            CREATE TABLE IF NOT EXISTS message_store (
+                id           INTEGER PRIMARY KEY AUTOINCREMENT,
+                session_id   TEXT,
+                message      TEXT
+            )
+        """)
         con.commit()
+
 
 
 def _get_session_history(session_id: str) -> SQLChatMessageHistory:
@@ -170,29 +178,29 @@ async def _maybe_summarize(session_id: str):
 
 def _build_llm():
     # 1. Groq Cloud LLM
-    groq_api_key = os.getenv("GROQ_API_KEY")
-    if groq_api_key:
-        print("[LLM] Initializing Groq Chat Provider")
-        from langchain_groq import ChatGroq
-        return ChatGroq(
-            api_key=groq_api_key,
-            model="llama-3.3-70b-versatile",
-            temperature=0,
-            max_tokens=1200,
-        )
+    # groq_api_key = os.getenv("GROQ_API_KEY")
+    # if groq_api_key:
+    #     print("[LLM] Initializing Groq Chat Provider")
+    #     from langchain_groq import ChatGroq
+    #     return ChatGroq(
+    #         api_key=groq_api_key,
+    #         model="llama-3.3-70b-versatile",
+    #         temperature=0,
+    #         max_tokens=1200,
+    #     )
 
 
     # 2. Gemini Cloud LLM
-    gemini_api_key = os.getenv("GEMINI_API_KEY")
-    if gemini_api_key:
-        print("[LLM] Initializing Gemini Chat Provider")
-        from langchain_google_genai import ChatGoogleGenAI
-        return ChatGoogleGenAI(
-            api_key=gemini_api_key,
-            model="gemini-1.5-flash",
-            temperature=0,
-            max_output_tokens=1200,
-        )
+    # gemini_api_key = os.getenv("GEMINI_API_KEY")
+    # if gemini_api_key:
+    #     print("[LLM] Initializing Gemini Chat Provider")
+    #     from langchain_google_genai import ChatGoogleGenAI
+    #     return ChatGoogleGenAI(
+    #         api_key=gemini_api_key,
+    #         model="gemini-1.5-flash",
+    #         temperature=0,
+    #         max_output_tokens=1200,
+    #     )
 
     # 3. HuggingFace Router Cloud LLM
     hf_token = os.getenv("HF_TOKEN")
@@ -207,14 +215,14 @@ def _build_llm():
         )
 
     # 4. Local Ollama (Default Fallback)
-    print("[LLM] Initializing Local Ollama Chat Provider")
-    return ChatOpenAI(
-        base_url=os.getenv("OLLAMA_BASE_URL", "http://127.0.0.1:11434/v1"),
-        api_key="ollama",
-        model=os.getenv("OLLAMA_MODEL", "llama3.2"),
-        temperature=0,
-        max_tokens=1200,
-    )
+    # print("[LLM] Initializing Local Ollama Chat Provider")
+    # return ChatOpenAI(
+    #     base_url=os.getenv("OLLAMA_BASE_URL", "http://127.0.0.1:11434/v1"),
+    #     api_key="ollama",
+    #     model=os.getenv("OLLAMA_MODEL", "llama3.2"),
+    #     temperature=0,
+    #     max_tokens=1200,
+    # )
 
 
 def init_chain():
@@ -291,7 +299,7 @@ You are FinBot, a high-precision NIFTY 50 analyst. Today's date is May 2026.
 async def lifespan(app: FastAPI):
     global nifty_bot
     print(f"[DB] Using database at: {_db_path}")
-    _ensure_summaries_table()
+    _ensure_db_tables()
     try:
         nifty_bot = init_chain()
         print("✅ FinBot Ready")
