@@ -189,7 +189,7 @@ class FallbackChatModel(BaseChatModel):
 # MODEL BUILDERS
 # ─────────────────────────────────────────────
 
-def _build_fallback_llm(model_id_groq: str, model_id_gemini: str, model_id_ollama: str) -> FallbackChatModel:
+def _build_fallback_llm(model_id_groq: str, model_id_ollama: str) -> FallbackChatModel:
     models = []
     
     # 1. Groq Cloud LLM
@@ -204,19 +204,7 @@ def _build_fallback_llm(model_id_groq: str, model_id_gemini: str, model_id_ollam
             timeout=15.0,
         ))
 
-    # 2. Gemini Cloud LLM
-    gemini_api_key = os.getenv("GEMINI_API_KEY")
-    if gemini_api_key:
-        print(f"[LLM Builder] Adding Gemini model {model_id_gemini} to fallback list")
-        from langchain_google_genai import ChatGoogleGenerativeAI
-        models.append(ChatGoogleGenerativeAI(
-            api_key=gemini_api_key,
-            model=model_id_gemini,
-            temperature=0,
-            timeout=15.0,
-        ))
-
-    # 3. Local Ollama (Default Fallback)
+    # 2. Local Ollama (Default Fallback)
     ollama_base_url = os.getenv("OLLAMA_BASE_URL", "http://127.0.0.1:11434/v1")
     print(f"[LLM Builder] Adding local Ollama model {model_id_ollama} to fallback list")
     models.append(ChatOpenAI(
@@ -241,13 +229,11 @@ def init_chain():
     # Build fallback models
     fast_llm = _build_fallback_llm(
         model_id_groq="openai/gpt-oss-20b",
-        model_id_gemini="gemini-1.5-flash",
         model_id_ollama=os.getenv("OLLAMA_MODEL", "llama3.2:3b")
     )
     
     qa_llm = _build_fallback_llm(
         model_id_groq="qwen/qwen3.6-27b",
-        model_id_gemini="gemini-1.5-flash",
         model_id_ollama=os.getenv("OLLAMA_MODEL", "llama3.2:3b")
     )
     
