@@ -23,7 +23,7 @@ from langchain_classic.chains.combine_documents import create_stuff_documents_ch
 from langchain_openai import ChatOpenAI
 
 from retriever import HybridNiftyRetriever
-from auth import verify_token, verify_admin, supabase
+from auth import verify_token, verify_admin, get_async_supabase
 
 os.environ.pop("SSL_CERT_FILE", None)
 os.environ.pop("REQUESTS_CA_BUNDLE", None)
@@ -40,35 +40,14 @@ nifty_bot = None
 _llm_ref  = None   # kept for background summarization
 
 # ─────────────────────────────────────────────
-# LEGACY SQLITE DATABASE HELPER CODE (COMMENTED OUT)
-# ─────────────────────────────────────────────
-# _DEFAULT_DB_URL = f"sqlite:///{_HERE / 'nifty_chat_history.db'}"
-# _db_url: str = os.getenv("CHAT_DB_URL", _DEFAULT_DB_URL)
-# def _resolve_db_path(url: str) -> str:
-#     raw = url.replace("sqlite:///", "", 1)
-#     path = Path(raw)
-#     if not path.is_absolute():
-#         path = (_HERE / path).resolve()
-#     return str(path)
-# _db_path: str = _resolve_db_path(_db_url)
-# def _ensure_db_tables():
-#     with sqlite3.connect(_db_path) as con:
-#         con.execute("CREATE TABLE IF NOT EXISTS session_summaries ...")
-#         con.execute("CREATE TABLE IF NOT EXISTS message_store ...")
-#         con.commit()
-# def _get_session_history(session_id: str) -> SQLChatMessageHistory:
-#     return SQLChatMessageHistory(session_id=session_id, connection_string=_db_url)
+# SUPABASE DATABASE HELPERS (ASYNC)
 # ─────────────────────────────────────────────
 
-
-# ─────────────────────────────────────────────
-# SUPABASE DATABASE HELPERS
-# ─────────────────────────────────────────────
-
-def _load_summary(session_id: str, user_id: str) -> str | None:
-    """Return the stored summary for a session from Supabase, or None."""
+async def _load_summary(session_id: str, user_id: str) -> str | None:
+    """Return the stored summary for a session from Supabase asynchronously, or None."""
     try:
-        res = supabase.table("session_summaries") \
+        client = await get_async_supabase()
+        res = await client.table("session_summaries") \
             .select("summary") \
             .eq("session_id", session_id) \
             .eq("user_id", user_id) \
@@ -79,10 +58,11 @@ def _load_summary(session_id: str, user_id: str) -> str | None:
         return None
 
 
-def _save_summary(session_id: str, summary: str, user_id: str):
-    """Upsert a summary for a session in Supabase."""
+async def _save_summary(session_id: str, summary: str, user_id: str):
+    """Upsert a summary for a session in Supabase asynchronously."""
     try:
-        supabase.table("session_summaries").upsert({
+        client = await get_async_supabase()
+        await client.table("session_summaries").upsert({
             "session_id": session_id,
             "summary": summary,
             "user_id": user_id,
@@ -116,8 +96,9 @@ async def _maybe_summarize(session_id: str, user_id: str):
     if _llm_ref is None:
         return
     try:
-        # Load message log from Supabase
-        res = supabase.table("messages") \
+        client = await get_async_supabase()
+        # Load message log from Supabase asynchronously
+        res = await client.table("messages") \
             .select("role", "content") \
             .eq("session_id", session_id) \
             .eq("user_id", user_id) \
@@ -138,7 +119,7 @@ async def _maybe_summarize(session_id: str, user_id: str):
         summary_text = result.content.strip()
 
         if summary_text:
-            _save_summary(session_id, summary_text, user_id)
+            await _save_summary(session_id, summary_text, user_id)
             print(f"[Summarizer] Session '{session_id}' updated ({len(user_turns)} turns).")
     except Exception as e:
         print(f"[Summarizer] Failed for session '{session_id}': {e}")
@@ -308,7 +289,15 @@ app = FastAPI(lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=[
+        "http://localhost:3000",
+        "http://localhost:5173",
+        "http://127.0.0.1:3000",
+        "http://127.0.0.1:5173",
+        "https://finbot-graph-rag.vercel.app",
+        "https://finbot-graph-rag.vercel.app/"
+    ],
+    allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -329,10 +318,12 @@ async def chat(req: ChatRequest, user: dict = Depends(verify_token)):
         raise HTTPException(503, "Bot not ready")
     try:
         user_id = user["id"]
-        summary = _load_summary(req.session_id, user_id) or "No prior summary available."
+        summary = await _load_summary(req.session_id, user_id) or "No prior summary available."
 
-        # Fetch history from Supabase
-        hist_res = supabase.table("messages") \
+        client = await get_async_supabase()
+
+        # Fetch history from Supabase asynchronously
+        hist_res = await client.table("messages") \
             .select("role", "content") \
             .eq("session_id", req.session_id) \
             .eq("user_id", user_id) \
@@ -346,8 +337,8 @@ async def chat(req: ChatRequest, user: dict = Depends(verify_token)):
             else:
                 chat_history.append(AIMessage(content=m["content"]))
 
-        # Invoke the RAG chain
-        result = nifty_bot.invoke(
+        # Invoke the RAG chain asynchronously
+        result = await nifty_bot.ainvoke(
             {
                 "input": req.message,
                 "session_summary": summary,
@@ -356,8 +347,8 @@ async def chat(req: ChatRequest, user: dict = Depends(verify_token)):
         )
         answer = result["answer"]
 
-        # Insert new messages to Supabase
-        supabase.table("messages").insert([
+        # Insert new messages to Supabase asynchronously
+        await client.table("messages").insert([
             {"session_id": req.session_id, "role": "user", "content": req.message, "user_id": user_id},
             {"session_id": req.session_id, "role": "assistant", "content": answer, "user_id": user_id}
         ]).execute()
@@ -379,8 +370,9 @@ async def health():
 @app.get("/sessions")
 async def list_sessions(user: dict = Depends(verify_token)):
     try:
-        # Load user messages
-        res = supabase.table("messages") \
+        client = await get_async_supabase()
+        # Load user messages asynchronously
+        res = await client.table("messages") \
             .select("id, session_id, role, content") \
             .eq("user_id", user["id"]) \
             .execute()
@@ -431,7 +423,8 @@ async def list_sessions(user: dict = Depends(verify_token)):
 @app.get("/history/{session_id}")
 async def get_history(session_id: str, user: dict = Depends(verify_token)):
     try:
-        res = supabase.table("messages") \
+        client = await get_async_supabase()
+        res = await client.table("messages") \
             .select("role", "content") \
             .eq("session_id", session_id) \
             .eq("user_id", user["id"]) \
@@ -452,7 +445,7 @@ async def get_history(session_id: str, user: dict = Depends(verify_token)):
 @app.get("/summary/{session_id}")
 async def get_summary(session_id: str, user: dict = Depends(verify_token)):
     """Return the stored summary for a session."""
-    summary = _load_summary(session_id, user["id"])
+    summary = await _load_summary(session_id, user["id"])
     if summary is None:
         raise HTTPException(404, f"No summary found for session '{session_id}'")
     return {"session_id": session_id, "summary": summary}
@@ -463,9 +456,10 @@ async def delete_history(session_id: str, user: dict = Depends(verify_token)):
     """Delete all messages AND the summary for a session."""
     try:
         user_id = user["id"]
-        # Delete messages and summaries
-        supabase.table("messages").delete().eq("session_id", session_id).eq("user_id", user_id).execute()
-        supabase.table("session_summaries").delete().eq("session_id", session_id).eq("user_id", user_id).execute()
+        client = await get_async_supabase()
+        # Delete messages and summaries asynchronously
+        await client.table("messages").delete().eq("session_id", session_id).eq("user_id", user_id).execute()
+        await client.table("session_summaries").delete().eq("session_id", session_id).eq("user_id", user_id).execute()
         return {"status": "success", "message": f"History and summary for session {session_id} deleted"}
     except Exception as e:
         traceback.print_exc()
@@ -476,9 +470,10 @@ async def delete_history(session_id: str, user: dict = Depends(verify_token)):
 async def delete_all_sessions(admin: dict = Depends(verify_admin)):
     """Delete ALL chat sessions and summaries (Requires Admin Claim)."""
     try:
+        client = await get_async_supabase()
         # Bypass table wiping prevention in postgrest by filtering on session_id unequal to a dummy value
-        supabase.table("messages").delete().neq("session_id", "_dummy_session_id_wipe_").execute()
-        supabase.table("session_summaries").delete().neq("session_id", "_dummy_session_id_wipe_").execute()
+        await client.table("messages").delete().neq("session_id", "_dummy_session_id_wipe_").execute()
+        await client.table("session_summaries").delete().neq("session_id", "_dummy_session_id_wipe_").execute()
 
         return {
             "status": "success",

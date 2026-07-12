@@ -2,7 +2,7 @@ import os
 import jwt
 from fastapi import Depends, HTTPException, Security
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
-from supabase import create_client, Client
+from supabase import create_client, acreate_client, Client, AsyncClient
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -14,22 +14,30 @@ SUPABASE_SERVICE_ROLE_KEY = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
 if not SUPABASE_URL or not SUPABASE_ANON_KEY:
     raise ValueError("❌ SUPABASE_URL and SUPABASE_ANON_KEY must be configured in environment")
 
-# Standard client initialized for auth/DB verification and backend queries.
-# Use SERVICE_ROLE_KEY if available to bypass RLS for admin DB reads/writes.
+# Standard sync client initialized for retriever operations that must remain synchronous.
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY or SUPABASE_ANON_KEY)
+
+# Lazy Async client initialization for high-concurrency FastAPI routes.
+_async_supabase: AsyncClient = None
+
+async def get_async_supabase() -> AsyncClient:
+    global _async_supabase
+    if _async_supabase is None:
+        _async_supabase = await acreate_client(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY or SUPABASE_ANON_KEY)
+    return _async_supabase
 
 security = HTTPBearer()
 
-def verify_token(credentials: HTTPAuthorizationCredentials = Security(security)) -> dict:
+async def verify_token(credentials: HTTPAuthorizationCredentials = Security(security)) -> dict:
     """
-    FastAPI dependency to verify Supabase JWT token.
+    FastAPI dependency to verify Supabase JWT token asynchronously.
     Calls Supabase auth.get_user to confirm token validity.
     Returns a dictionary with the verified user's details.
     """
     token = credentials.credentials
     try:
-        # Call Supabase to check token validity and get user
-        res = supabase.auth.get_user(token)
+        client = await get_async_supabase()
+        res = await client.auth.get_user(token)
         if not res or not res.user:
             raise HTTPException(status_code=401, detail="Invalid Supabase JWT token")
         return {
@@ -44,13 +52,13 @@ def verify_token(credentials: HTTPAuthorizationCredentials = Security(security))
             detail=f"Could not validate credentials: {str(e)}"
         )
 
-def verify_admin(credentials: HTTPAuthorizationCredentials = Security(security)) -> dict:
+async def verify_admin(credentials: HTTPAuthorizationCredentials = Security(security)) -> dict:
     """
     FastAPI dependency to verify Supabase JWT token AND check for admin role claim in app_metadata.
     """
     token = credentials.credentials
-    # First verify token is valid via Supabase Auth
-    user_info = verify_token(credentials)
+    # First verify token is valid via Supabase Auth asynchronously
+    user_info = await verify_token(credentials)
     
     try:
         # Decode the payload to read claims
