@@ -78,14 +78,10 @@ durationpy==0.10
     # via kubernetes
 executing==2.2.1
     # via stack-data
-faiss-cpu==1.14.3
-    # via niftybot (pyproject.toml)
 fastapi==0.136.1
     # via niftybot (pyproject.toml)
 filelock==3.29.0
-    # via
-    #   huggingface-hub
-    #   torch
+    # via huggingface-hub
 filetype==1.2.0
     # via langchain-google-genai
 flatbuffers==25.12.19
@@ -97,9 +93,7 @@ frozenlist==1.8.0
     #   aiohttp
     #   aiosignal
 fsspec==2026.4.0
-    # via
-    #   huggingface-hub
-    #   torch
+    # via huggingface-hub
 google-auth==2.50.0
     # via google-genai
 google-genai==1.74.0
@@ -147,9 +141,7 @@ httpx-sse==0.4.3
 huggingface-hub==1.13.0
     # via
     #   langchain-huggingface
-    #   sentence-transformers
     #   tokenizers
-    #   transformers
 hyperframe==6.1.0
     # via h2
 idna==3.13
@@ -169,13 +161,9 @@ ipython-pygments-lexers==1.1.1
 jedi==0.20.0
     # via ipython
 jinja2==3.1.6
-    # via
-    #   pyvis
-    #   torch
+    # via pyvis
 jiter==0.16.0
     # via openai
-joblib==1.5.3
-    # via scikit-learn
 jsonpatch==1.33
     # via langchain-core
 jsonpickle==4.1.1
@@ -252,8 +240,6 @@ mdurl==0.1.2
     # via markdown-it-py
 mmh3==5.2.1
     # via chromadb
-mpmath==1.3.0
-    # via sympy
 multidict==6.7.1
     # via
     #   aiohttp
@@ -266,18 +252,12 @@ networkx==3.6.1
     # via
     #   niftybot (pyproject.toml)
     #   pyvis
-    #   torch
 numpy==2.4.4
     # via
     #   chromadb
-    #   faiss-cpu
     #   langchain-community
     #   onnxruntime
     #   pandas
-    #   scikit-learn
-    #   scipy
-    #   sentence-transformers
-    #   transformers
     #   yfinance
 oauthlib==3.3.1
     # via requests-oauthlib
@@ -320,13 +300,11 @@ packaging==26.2
     # via
     #   build
     #   deprecation
-    #   faiss-cpu
     #   huggingface-hub
     #   langchain-core
     #   langsmith
     #   marshmallow
     #   onnxruntime
-    #   transformers
 pandas==3.0.2
     # via
     #   niftybot (pyproject.toml)
@@ -428,7 +406,6 @@ pyyaml==6.0.3
     #   langchain-classic
     #   langchain-community
     #   langchain-core
-    #   transformers
     #   uvicorn
 realtime==2.31.0
     # via supabase
@@ -437,9 +414,7 @@ referencing==0.37.0
     #   jsonschema
     #   jsonschema-specifications
 regex==2026.4.4
-    # via
-    #   tiktoken
-    #   transformers
+    # via tiktoken
 requests==2.33.1
     # via
     #   google-auth
@@ -466,18 +441,6 @@ rpds-py==0.30.0
     # via
     #   jsonschema
     #   referencing
-safetensors==0.8.0
-    # via transformers
-scikit-learn==1.8.0
-    # via sentence-transformers
-scipy==1.17.1
-    # via
-    #   scikit-learn
-    #   sentence-transformers
-sentence-transformers==5.6.0
-    # via niftybot (pyproject.toml)
-setuptools==81.0.0
-    # via torch
 shellingham==1.5.4
     # via typer
 six==1.17.0
@@ -509,8 +472,6 @@ supabase-auth==2.31.0
     # via supabase
 supabase-functions==2.31.0
     # via supabase
-sympy==1.14.0
-    # via torch
 tenacity==9.1.4
     # via
     #   chromadb
@@ -518,35 +479,25 @@ tenacity==9.1.4
     #   langchain-community
     #   langchain-core
     #   wikipedia-api
-threadpoolctl==3.6.0
-    # via scikit-learn
 tiktoken==0.13.0
     # via langchain-openai
 tokenizers==0.22.2
     # via
     #   chromadb
     #   langchain-huggingface
-    #   transformers
-torch==2.13.0
-    # via sentence-transformers
 tqdm==4.67.3
     # via
     #   chromadb
     #   huggingface-hub
     #   openai
-    #   sentence-transformers
-    #   transformers
 traitlets==5.14.3
     # via
     #   ipython
     #   matplotlib-inline
-transformers==5.13.1
-    # via sentence-transformers
 typer==0.25.1
     # via
     #   chromadb
     #   huggingface-hub
-    #   transformers
 typing-extensions==4.15.0
     # via
     #   beautifulsoup4
@@ -566,9 +517,7 @@ typing-extensions==4.15.0
     #   pydantic
     #   pydantic-core
     #   realtime
-    #   sentence-transformers
     #   sqlalchemy
-    #   torch
     #   typing-inspect
     #   typing-inspection
 typing-inspect==0.9.0
