@@ -1,8 +1,8 @@
 import json
 import os
 import sys
-import sqlite3
 import traceback
+import asyncio
 from contextlib import asynccontextmanager
 from pathlib import Path
 from asyncio import create_task
@@ -11,21 +11,19 @@ from asyncio import create_task
 sys.path.append(str(Path(__file__).resolve().parent))
 
 from dotenv import load_dotenv
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
-from langchain_core.messages import SystemMessage
-from langchain_community.chat_message_histories import SQLChatMessageHistory
+from langchain_core.messages import SystemMessage, HumanMessage, AIMessage, BaseMessage
+from langchain_core.language_models.chat_models import BaseChatModel
 from langchain_classic.chains import create_history_aware_retriever, create_retrieval_chain
 from langchain_classic.chains.combine_documents import create_stuff_documents_chain
-from langchain_core.runnables.history import RunnableWithMessageHistory
-
-
 from langchain_openai import ChatOpenAI
 
 from retriever import HybridNiftyRetriever
+from auth import verify_token, verify_admin, supabase
 
 os.environ.pop("SSL_CERT_FILE", None)
 os.environ.pop("REQUESTS_CA_BUNDLE", None)
@@ -38,93 +36,60 @@ _HERE = Path(__file__).resolve().parent
 _DEFAULT_GRAPH  = str(_HERE.parent / "data" / "networkx" / "nifty_graph.pkl")
 _DEFAULT_CHROMA = str(_HERE.parent / "data" / "chromadb")
 
-# ─────────────────────────────────────────────
-# DB PATH RESOLUTION
-# Read CHAT_DB_URL from .env (e.g. sqlite:///./nifty_chat_history.db)
-# _db_url  → passed to SQLChatMessageHistory (needs full sqlite:/// URL)
-# _db_path → passed to sqlite3.connect()     (needs a plain file path)
-# ─────────────────────────────────────────────
-
-_DEFAULT_DB_URL = f"sqlite:///{_HERE / 'nifty_chat_history.db'}"
-_db_url: str = os.getenv("CHAT_DB_URL", _DEFAULT_DB_URL)
-
-def _resolve_db_path(url: str) -> str:
-    """
-    Convert a sqlite:/// URL to a plain OS file path for sqlite3.connect().
-    Handles both relative (sqlite:///./file.db) and absolute (sqlite:///C:/...) forms.
-    """
-    raw = url.replace("sqlite:///", "", 1)   # strip the scheme prefix once
-    path = Path(raw)
-    if not path.is_absolute():
-        # relative paths are resolved from the backend directory
-        path = (_HERE / path).resolve()
-    return str(path)
-
-_db_path: str = _resolve_db_path(_db_url)
-
 nifty_bot = None
 _llm_ref  = None   # kept for background summarization
 
 # ─────────────────────────────────────────────
-# DB HELPERS
+# LEGACY SQLITE DATABASE HELPER CODE (COMMENTED OUT)
+# ─────────────────────────────────────────────
+# _DEFAULT_DB_URL = f"sqlite:///{_HERE / 'nifty_chat_history.db'}"
+# _db_url: str = os.getenv("CHAT_DB_URL", _DEFAULT_DB_URL)
+# def _resolve_db_path(url: str) -> str:
+#     raw = url.replace("sqlite:///", "", 1)
+#     path = Path(raw)
+#     if not path.is_absolute():
+#         path = (_HERE / path).resolve()
+#     return str(path)
+# _db_path: str = _resolve_db_path(_db_url)
+# def _ensure_db_tables():
+#     with sqlite3.connect(_db_path) as con:
+#         con.execute("CREATE TABLE IF NOT EXISTS session_summaries ...")
+#         con.execute("CREATE TABLE IF NOT EXISTS message_store ...")
+#         con.commit()
+# def _get_session_history(session_id: str) -> SQLChatMessageHistory:
+#     return SQLChatMessageHistory(session_id=session_id, connection_string=_db_url)
 # ─────────────────────────────────────────────
 
-def _ensure_db_tables():
-    """Create the session_summaries and message_store tables if they don't exist."""
-    with sqlite3.connect(_db_path) as con:
-        con.execute("""
-            CREATE TABLE IF NOT EXISTS session_summaries (
-                session_id   TEXT PRIMARY KEY,
-                summary      TEXT NOT NULL,
-                updated_at   DATETIME DEFAULT CURRENT_TIMESTAMP
-            )
-        """)
-        con.execute("""
-            CREATE TABLE IF NOT EXISTS message_store (
-                id           INTEGER PRIMARY KEY AUTOINCREMENT,
-                session_id   TEXT,
-                message      TEXT
-            )
-        """)
-        con.commit()
 
+# ─────────────────────────────────────────────
+# SUPABASE DATABASE HELPERS
+# ─────────────────────────────────────────────
 
-
-def _get_session_history(session_id: str) -> SQLChatMessageHistory:
-    # SQLChatMessageHistory expects the full sqlite:/// URL
-    return SQLChatMessageHistory(
-        session_id=session_id,
-        connection_string=_db_url,
-    )
-
-
-def _load_summary(session_id: str) -> str | None:
-    """Return the stored summary for a session, or None."""
+def _load_summary(session_id: str, user_id: str) -> str | None:
+    """Return the stored summary for a session from Supabase, or None."""
     try:
-        with sqlite3.connect(_db_path) as con:
-            row = con.execute(
-                "SELECT summary FROM session_summaries WHERE session_id = ?",
-                (session_id,),
-            ).fetchone()
-        return row[0] if row else None
-    except Exception:
+        res = supabase.table("session_summaries") \
+            .select("summary") \
+            .eq("session_id", session_id) \
+            .eq("user_id", user_id) \
+            .execute()
+        return res.data[0]["summary"] if res.data else None
+    except Exception as e:
+        print(f"[Supabase DB] Summary load failed: {e}")
         return None
 
 
-def _save_summary(session_id: str, summary: str):
-    """Upsert a summary for a session."""
-    with sqlite3.connect(_db_path) as con:
-        con.execute(
-            """
-            INSERT INTO session_summaries (session_id, summary, updated_at)
-            VALUES (?, ?, CURRENT_TIMESTAMP)
-            ON CONFLICT(session_id) DO UPDATE SET
-                summary    = excluded.summary,
-                updated_at = excluded.updated_at
-            """,
-            (session_id, summary),
-        )
-        con.commit()
+def _save_summary(session_id: str, summary: str, user_id: str):
+    """Upsert a summary for a session in Supabase."""
+    try:
+        supabase.table("session_summaries").upsert({
+            "session_id": session_id,
+            "summary": summary,
+            "user_id": user_id,
+            "updated_at": "now()"
+        }).execute()
+    except Exception as e:
+        print(f"[Supabase DB] Summary save failed: {e}")
 
 
 # ─────────────────────────────────────────────
@@ -142,23 +107,30 @@ Conversation:
 SUMMARIZE_EVERY_N_TURNS = 4   # summarize after every 4 user turns
 
 
-async def _maybe_summarize(session_id: str):
+async def _maybe_summarize(session_id: str, user_id: str):
     """
     Check if enough new turns have accumulated since last summary.
-    If so, generate a fresh summary and persist it in SQLite.
+    If so, generate a fresh summary and persist it in Supabase.
     Runs as a fire-and-forget background task.
     """
     if _llm_ref is None:
         return
     try:
-        history = _get_session_history(session_id)
-        messages = history.messages
-        user_turns = [m for m in messages if m.type == "human"]
+        # Load message log from Supabase
+        res = supabase.table("messages") \
+            .select("role", "content") \
+            .eq("session_id", session_id) \
+            .eq("user_id", user_id) \
+            .order("created_at", desc=False) \
+            .execute()
+
+        messages = res.data
+        user_turns = [m for m in messages if m["role"] == "user"]
         if len(user_turns) == 0 or len(user_turns) % SUMMARIZE_EVERY_N_TURNS != 0:
             return
 
         transcript = "\n".join(
-            f"{'User' if m.type == 'human' else 'Assistant'}: {m.content}"
+            f"{'User' if m['role'] == 'user' else 'Assistant'}: {m['content']}"
             for m in messages
         )
 
@@ -166,63 +138,93 @@ async def _maybe_summarize(session_id: str):
         summary_text = result.content.strip()
 
         if summary_text:
-            _save_summary(session_id, summary_text)
+            _save_summary(session_id, summary_text, user_id)
             print(f"[Summarizer] Session '{session_id}' updated ({len(user_turns)} turns).")
     except Exception as e:
         print(f"[Summarizer] Failed for session '{session_id}': {e}")
 
 
 # ─────────────────────────────────────────────
-# CHAIN BUILDER
+# DYNAMIC FALLBACK CHAT MODEL WRAPPER
+# ─────────────────────────────────────────────
+from typing import List, Any
+from langchain_core.outputs import ChatResult, ChatGeneration
+
+class FallbackChatModel(BaseChatModel):
+    models: List[Any]
+    timeout: float = 15.0
+
+    @property
+    def _llm_type(self) -> str:
+        return "fallback-chat-model"
+
+    def _generate(self, messages: List[BaseMessage], stop=None, run_manager=None, **kwargs) -> ChatResult:
+        last_err = None
+        for model in self.models:
+            try:
+                res = model.invoke(messages, stop=stop, config=run_manager.get_child() if run_manager else None, **kwargs)
+                return ChatResult(generations=[ChatGeneration(message=res)])
+            except Exception as e:
+                print(f"[FallbackLLM] Sync fallback step failed for {model}: {e}")
+                last_err = e
+        raise last_err or RuntimeError("All models in fallback chain failed")
+
+    async def _agenerate(self, messages: List[BaseMessage], stop=None, run_manager=None, **kwargs) -> ChatResult:
+        last_err = None
+        for model in self.models:
+            try:
+                print(f"[FallbackLLM] Attempting async invoke on {model} (timeout={self.timeout}s)...")
+                res = await asyncio.wait_for(
+                    model.ainvoke(messages, stop=stop, config=run_manager.get_child() if run_manager else None, **kwargs),
+                    timeout=self.timeout
+                )
+                return ChatResult(generations=[ChatGeneration(message=res)])
+            except Exception as e:
+                print(f"[FallbackLLM] Async fallback step failed for {model}: {e}")
+                last_err = e
+        raise last_err or RuntimeError("All models in fallback chain failed")
+
+
+# ─────────────────────────────────────────────
+# MODEL BUILDERS
 # ─────────────────────────────────────────────
 
-def _build_llm():
+def _build_fallback_llm(model_id_groq: str, model_id_gemini: str, model_id_ollama: str) -> FallbackChatModel:
+    models = []
+    
     # 1. Groq Cloud LLM
-    # groq_api_key = os.getenv("GROQ_API_KEY")
-    # if groq_api_key:
-    #     print("[LLM] Initializing Groq Chat Provider")
-    #     from langchain_groq import ChatGroq
-    #     return ChatGroq(
-    #         api_key=groq_api_key,
-    #         model="llama-3.3-70b-versatile",
-    #         temperature=0,
-    #         max_tokens=1200,
-    #     )
-
+    groq_api_key = os.getenv("GROQ_API_KEY")
+    if groq_api_key:
+        print(f"[LLM Builder] Adding Groq model {model_id_groq} to fallback list")
+        from langchain_groq import ChatGroq
+        models.append(ChatGroq(
+            api_key=groq_api_key,
+            model=model_id_groq,
+            temperature=0,
+        ))
 
     # 2. Gemini Cloud LLM
-    # gemini_api_key = os.getenv("GEMINI_API_KEY")
-    # if gemini_api_key:
-    #     print("[LLM] Initializing Gemini Chat Provider")
-    #     from langchain_google_genai import ChatGoogleGenAI
-    #     return ChatGoogleGenAI(
-    #         api_key=gemini_api_key,
-    #         model="gemini-1.5-flash",
-    #         temperature=0,
-    #         max_output_tokens=1200,
-    #     )
-
-    # 3. HuggingFace Router Cloud LLM
-    hf_token = os.getenv("HF_TOKEN")
-    if hf_token:
-        print("[LLM] Initializing HuggingFace Router Chat Provider")
-        return ChatOpenAI(
-            base_url="https://router.huggingface.co/v1",
-            api_key=hf_token,
-            model="Qwen/Qwen2.5-7B-Instruct:together",
+    gemini_api_key = os.getenv("GEMINI_API_KEY")
+    if gemini_api_key:
+        print(f"[LLM Builder] Adding Gemini model {model_id_gemini} to fallback list")
+        from langchain_google_genai import ChatGoogleGenerativeAI
+        models.append(ChatGoogleGenerativeAI(
+            api_key=gemini_api_key,
+            model=model_id_gemini,
             temperature=0,
-            max_tokens=1200,
-        )
+        ))
 
-    # 4. Local Ollama (Default Fallback)
-    # print("[LLM] Initializing Local Ollama Chat Provider")
-    # return ChatOpenAI(
-    #     base_url=os.getenv("OLLAMA_BASE_URL", "http://127.0.0.1:11434/v1"),
-    #     api_key="ollama",
-    #     model=os.getenv("OLLAMA_MODEL", "llama3.2"),
-    #     temperature=0,
-    #     max_tokens=1200,
-    # )
+    # 3. Local Ollama (Default Fallback)
+    ollama_base_url = os.getenv("OLLAMA_BASE_URL", "http://127.0.0.1:11434/v1")
+    print(f"[LLM Builder] Adding local Ollama model {model_id_ollama} to fallback list")
+    models.append(ChatOpenAI(
+        base_url=ollama_base_url,
+        api_key="ollama",
+        model=model_id_ollama,
+        temperature=0,
+    ))
+
+    return FallbackChatModel(models=models, timeout=15.0)
 
 
 def init_chain():
@@ -233,12 +235,25 @@ def init_chain():
     if not Path(graph_path).exists():
         raise FileNotFoundError(f"❌ Graph missing at {graph_path}")
 
-    llm = _build_llm()
-    _llm_ref = llm  # expose for background summarizer
+    # Build fallback models
+    fast_llm = _build_fallback_llm(
+        model_id_groq="openai/gpt-oss-20b",
+        model_id_gemini="gemini-1.5-flash",
+        model_id_ollama=os.getenv("OLLAMA_MODEL", "llama3.2:3b")
+    )
+    
+    qa_llm = _build_fallback_llm(
+        model_id_groq="qwen/qwen3.6-27b",
+        model_id_gemini="gemini-1.5-flash",
+        model_id_ollama=os.getenv("OLLAMA_MODEL", "llama3.2:3b")
+    )
+    
+    _llm_ref = qa_llm  # expose for background summarizer
 
-    retriever = HybridNiftyRetriever(graph_path=graph_path, chroma_path=chroma_path)
+    # Hybrid retriever
+    retriever = HybridNiftyRetriever(graph_path=graph_path, chroma_path=chroma_path, llm=fast_llm)
 
-    # STAGE 1 — Query rewriter: resolves pronouns / references using recent chat history
+    # STAGE 1 — Query rewriter: uses fast_llm
     contextualise_prompt = ChatPromptTemplate.from_messages([
         (
             "system",
@@ -275,20 +290,14 @@ You are FinBot, a high-precision NIFTY 50 analyst. Today's date is May 2026.
         ("human", "{input}"),
     ])
 
-    history_retriever = create_history_aware_retriever(llm, retriever, contextualise_prompt)
+    history_retriever = create_history_aware_retriever(fast_llm, retriever, contextualise_prompt)
 
     rag_chain = create_retrieval_chain(
         history_retriever,
-        create_stuff_documents_chain(llm, qa_prompt),
+        create_stuff_documents_chain(qa_llm, qa_prompt),
     )
 
-    return RunnableWithMessageHistory(
-        rag_chain,
-        _get_session_history,
-        input_messages_key="input",
-        history_messages_key="chat_history",
-        output_messages_key="answer",
-    )
+    return rag_chain
 
 
 # ─────────────────────────────────────────────
@@ -298,8 +307,6 @@ You are FinBot, a high-precision NIFTY 50 analyst. Today's date is May 2026.
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     global nifty_bot
-    print(f"[DB] Using database at: {_db_path}")
-    _ensure_db_tables()
     try:
         nifty_bot = init_chain()
         print("✅ FinBot Ready")
@@ -328,21 +335,48 @@ class ChatRequest(BaseModel):
 
 
 @app.post("/chat")
-async def chat(req: ChatRequest):
+async def chat(req: ChatRequest, user: dict = Depends(verify_token)):
     if nifty_bot is None:
         raise HTTPException(503, "Bot not ready")
     try:
-        summary = _load_summary(req.session_id) or "No prior summary available."
+        user_id = user["id"]
+        summary = _load_summary(req.session_id, user_id) or "No prior summary available."
 
+        # Fetch history from Supabase
+        hist_res = supabase.table("messages") \
+            .select("role", "content") \
+            .eq("session_id", req.session_id) \
+            .eq("user_id", user_id) \
+            .order("created_at", desc=False) \
+            .execute()
+
+        chat_history = []
+        for m in hist_res.data:
+            if m["role"] == "user":
+                chat_history.append(HumanMessage(content=m["content"]))
+            else:
+                chat_history.append(AIMessage(content=m["content"]))
+
+        # Invoke the RAG chain
         result = nifty_bot.invoke(
-            {"input": req.message, "session_summary": summary},
-            config={"configurable": {"session_id": req.session_id}},
+            {
+                "input": req.message,
+                "session_summary": summary,
+                "chat_history": chat_history
+            }
         )
+        answer = result["answer"]
+
+        # Insert new messages to Supabase
+        supabase.table("messages").insert([
+            {"session_id": req.session_id, "role": "user", "content": req.message, "user_id": user_id},
+            {"session_id": req.session_id, "role": "assistant", "content": answer, "user_id": user_id}
+        ]).execute()
 
         # Fire-and-forget: update summary in background without blocking the response
-        create_task(_maybe_summarize(req.session_id))
+        create_task(_maybe_summarize(req.session_id, user_id))
 
-        return {"answer": result["answer"]}
+        return {"answer": answer}
     except Exception as e:
         traceback.print_exc()
         raise HTTPException(500, str(e))
@@ -354,99 +388,113 @@ async def health():
 
 
 @app.get("/sessions")
-async def list_sessions():
+async def list_sessions(user: dict = Depends(verify_token)):
     try:
-        with sqlite3.connect(_db_path) as con:
-            rows = con.execute("""
-                SELECT 
-                    s.session_id,
-                    COUNT(*) as message_count,
-                    (
-                        SELECT json_extract(m2.message, '$.data.content')
-                        FROM message_store m2
-                        WHERE m2.session_id = s.session_id 
-                          AND json_extract(m2.message, '$.type') = 'human'
-                        ORDER BY m2.id ASC
-                        LIMIT 1
-                    ) as preview
-                FROM message_store s
-                GROUP BY s.session_id
-                ORDER BY MAX(s.id) DESC
-            """).fetchall()
+        # Load user messages
+        res = supabase.table("messages") \
+            .select("id, session_id, role, content") \
+            .eq("user_id", user["id"]) \
+            .execute()
+        
+        # Group sessions in Python
+        sessions_map = {}
+        for m in res.data:
+            sid = m["session_id"]
+            if sid not in sessions_map:
+                sessions_map[sid] = {
+                    "id": sid,
+                    "messages": [],
+                    "max_id": 0
+                }
+            sessions_map[sid]["messages"].append(m)
+            if m["id"] > sessions_map[sid]["max_id"]:
+                sessions_map[sid]["max_id"] = m["id"]
+
+        sessions_list = []
+        for sid, data in sessions_map.items():
+            preview = "New Chat"
+            human_messages = [m for m in data["messages"] if m["role"] == "user"]
+            if human_messages:
+                human_messages.sort(key=lambda x: x["id"])
+                preview = human_messages[0]["content"]
+
+            sessions_list.append({
+                "id": sid,
+                "message_count": len(data["messages"]),
+                "preview": preview,
+                "max_id": data["max_id"]
+            })
+
+        # Sort sessions: most recent first
+        sessions_list.sort(key=lambda x: x["max_id"], reverse=True)
 
         return {
             "sessions": [
-                {
-                    "id": r[0],
-                    "message_count": r[1],
-                    "preview": (r[2] or "New Chat")
-                }
-                for r in rows
+                {"id": s["id"], "message_count": s["message_count"], "preview": s["preview"]}
+                for s in sessions_list
             ]
         }
-
     except Exception as e:
-        print("Error:", e)
+        print("Error listing sessions:", e)
         return {"sessions": []}
 
 
 @app.get("/history/{session_id}")
-async def get_history(session_id: str):
-    history = _get_session_history(session_id)
-    return {
-        "session_id": session_id,
-        "messages": [
-            {"role": "user" if m.type == "human" else "ai", "content": m.content}
-            for m in history.messages
-        ],
-    }
+async def get_history(session_id: str, user: dict = Depends(verify_token)):
+    try:
+        res = supabase.table("messages") \
+            .select("role", "content") \
+            .eq("session_id", session_id) \
+            .eq("user_id", user["id"]) \
+            .order("created_at", desc=False) \
+            .execute()
+
+        return {
+            "session_id": session_id,
+            "messages": [
+                {"role": "user" if m["role"] == "user" else "ai", "content": m["content"]}
+                for m in res.data
+            ],
+        }
+    except Exception as e:
+        raise HTTPException(500, str(e))
 
 
 @app.get("/summary/{session_id}")
-async def get_summary(session_id: str):
+async def get_summary(session_id: str, user: dict = Depends(verify_token)):
     """Return the stored summary for a session."""
-    summary = _load_summary(session_id)
+    summary = _load_summary(session_id, user["id"])
     if summary is None:
         raise HTTPException(404, f"No summary found for session '{session_id}'")
     return {"session_id": session_id, "summary": summary}
 
 
 @app.delete("/history/{session_id}")
-async def delete_history(session_id: str):
+async def delete_history(session_id: str, user: dict = Depends(verify_token)):
     """Delete all messages AND the summary for a session."""
     try:
-        with sqlite3.connect(_db_path) as con:
-            msg_cursor = con.execute(
-                "DELETE FROM message_store WHERE session_id = ?", (session_id,)
-            )
-            con.execute(
-                "DELETE FROM session_summaries WHERE session_id = ?", (session_id,)
-            )
-            con.commit()
-            if msg_cursor.rowcount == 0:
-                return {
-                    "status": "not_found",
-                    "message": f"No history found for session {session_id}",
-                }
+        user_id = user["id"]
+        # Delete messages and summaries
+        supabase.table("messages").delete().eq("session_id", session_id).eq("user_id", user_id).execute()
+        supabase.table("session_summaries").delete().eq("session_id", session_id).eq("user_id", user_id).execute()
         return {"status": "success", "message": f"History and summary for session {session_id} deleted"}
     except Exception as e:
         traceback.print_exc()
         raise HTTPException(500, str(e))
 
+
 @app.delete("/sessions")
-async def delete_all_sessions():
-    """Delete ALL chat sessions and summaries."""
+async def delete_all_sessions(admin: dict = Depends(verify_admin)):
+    """Delete ALL chat sessions and summaries (Requires Admin Claim)."""
     try:
-        with sqlite3.connect(_db_path) as con:
-            con.execute("DELETE FROM message_store")
-            con.execute("DELETE FROM session_summaries")
-            con.commit()
+        # Bypass table wiping prevention in postgrest by filtering on session_id unequal to a dummy value
+        supabase.table("messages").delete().neq("session_id", "_dummy_session_id_wipe_").execute()
+        supabase.table("session_summaries").delete().neq("session_id", "_dummy_session_id_wipe_").execute()
 
         return {
             "status": "success",
             "message": "All chats and summaries deleted"
         }
-
     except Exception as e:
         traceback.print_exc()
         raise HTTPException(500, str(e))

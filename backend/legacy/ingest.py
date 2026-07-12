@@ -294,43 +294,10 @@ def ingest_all():
             model_name="BAAI/bge-small-en-v1.5",
             model_kwargs={"device": "cpu"},
         )
-        
-        # Build embeddings and upload to Supabase
-        texts = [doc.page_content for doc in all_chunks]
-        print(f"   Embedding {len(texts)} chunks...")
-        chunk_embeddings = embeddings.embed_documents(texts)
-        
-        # Ensure metadata has 'source'
-        for doc in all_chunks:
-            doc.metadata.setdefault("source", "vector_kb")
-            
-        import sys
-        sys.path.append(str(Path(__file__).resolve().parent))
-        from auth import supabase
-        
-        rows = []
-        for doc, emb in zip(all_chunks, chunk_embeddings):
-            rows.append({
-                "content": doc.page_content,
-                "embedding": emb,
-                "metadata": doc.metadata
-            })
-            
-        print("🧹 Clearing existing documents from Supabase...")
-        try:
-            supabase.table("documents").delete().neq("id", -1).execute()
-            print("✅ Documents table cleared.")
-        except Exception as e:
-            print(f"⚠️ Warning clearing documents table: {e}")
-            
-        batch_size = 100
-        print(f"📤 Uploading {len(rows)} documents to Supabase in batches of {batch_size}...")
-        for i in range(0, len(rows), batch_size):
-            supabase.table("documents").insert(rows[i:i+batch_size]).execute()
-            
-        print("\n✅ Supabase: Chunks successfully embedded and stored.")
+        Chroma.from_documents(all_chunks, embeddings, persist_directory=CHROMA_PATH)
+        print(f"\n✅ ChromaDB: {len(all_chunks)} chunks stored at {CHROMA_PATH}")
     else:
-        print("\n⚠️  No wiki chunks — Supabase not populated.")
+        print("\n⚠️  No wiki chunks — ChromaDB not populated.")
 
     GRAPH_PATH.parent.mkdir(parents=True, exist_ok=True)
     with open(GRAPH_PATH, "wb") as f:

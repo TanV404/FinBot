@@ -11,7 +11,7 @@ from langchain_core.documents import Document
 import os
 from huggingface_hub import InferenceClient
 from langchain_core.embeddings import Embeddings
-# from langchain_community.vectorstores import Chroma # (Legacy)
+from langchain_community.vectorstores import Chroma
 
 
 # ── Pydantic schema for LLM structured output ────────────────
@@ -219,39 +219,10 @@ class HuggingFaceAPIEmbeddings(Embeddings):
         return list(res)
 
 
-# ── Supabase Vector Store client wrapper ──────────────────────
-class SupabaseVectorStore:
-    def __init__(self, embeddings: Embeddings):
-        from auth import supabase
-        self._supabase = supabase
-        self._embeddings = embeddings
-
-    def similarity_search(self, query: str, k: int = 3, filter: dict = None) -> List[Document]:
-        query_embedding = self._embeddings.embed_query(query)
-        try:
-            res = self._supabase.rpc("match_documents", {
-                "query_embedding": query_embedding,
-                "match_threshold": 0.0,
-                "match_count": k,
-                "filter": filter or {}
-            }).execute()
-            
-            docs = []
-            for row in res.data:
-                docs.append(Document(
-                    page_content=row["content"],
-                    metadata=row["metadata"]
-                ))
-            return docs
-        except Exception as e:
-            print(f"[SupabaseVectorStore] Search failed: {e}")
-            return []
-
-
 # ── Hybrid retriever (graph + vector) ────────────────────────
 class HybridNiftyRetriever(BaseRetriever):
     graph_path:  str
-    chroma_path: str = ""
+    chroma_path: str
     llm: Any = None
     _graph:  Any = PrivateAttr()
     _vector: Any = PrivateAttr()
@@ -261,7 +232,10 @@ class HybridNiftyRetriever(BaseRetriever):
         self._graph = NiftyGraphRetriever(graph_path=self.graph_path, llm=self.llm)
 
         emb = HuggingFaceAPIEmbeddings()
-        self._vector = SupabaseVectorStore(embeddings=emb)
+        self._vector = Chroma(
+            persist_directory=self.chroma_path,
+            embedding_function=emb,
+        )
 
     def _get_relevant_documents(self, query: str, *, run_manager=None):
         graph_docs = self._graph.invoke(query)

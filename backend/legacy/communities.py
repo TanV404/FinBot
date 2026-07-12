@@ -147,27 +147,33 @@ def summarize_communities(
     return summaries
 
 
-# ── Supabase storage ──────────────────────────────────────────
+# ── ChromaDB storage ──────────────────────────────────────────
 
-def store_summaries_in_supabase(summaries: List[Dict[str, Any]]):
+def store_summaries_in_chroma(summaries: List[Dict[str, Any]]):
     """
-    Embed and store community summaries in Supabase.
+    Embed and store community summaries in ChromaDB.
+
+    FIX: Uses Chroma(...).add_documents() instead of Chroma.from_documents()
+    so that this step APPENDS to the existing collection (populated by ingest.py)
+    rather than replacing it.
     """
     docs = []
     for summary in summaries:
-        content = (
-            f"Community {summary['community_id']} Summary: {summary['summary']}\n\n"
-            f"Nodes in community: {', '.join(str(n) for n in summary['nodes'])}"
+        doc = Document(
+            page_content=(
+                f"Community {summary['community_id']} Summary: {summary['summary']}\n\n"
+                f"Nodes in community: {', '.join(str(n) for n in summary['nodes'])}"
+            ),
+            metadata={
+                "source":       "community_summary",
+                "community_id": summary["community_id"],
+                "node_count":   len(summary["nodes"]),
+            },
         )
-        metadata = {
-            "source":       "community_summary",
-            "community_id": summary["community_id"],
-            "node_count":   len(summary["nodes"]),
-        }
-        docs.append((content, metadata))
+        docs.append(doc)
 
     if not docs:
-        print("⚠️  No valid summaries to ingest.")
+        print("⚠️  No valid summaries to ingest into ChromaDB.")
         return
 
     embeddings = HuggingFaceEmbeddings(
@@ -175,30 +181,13 @@ def store_summaries_in_supabase(summaries: List[Dict[str, Any]]):
         model_kwargs={"device": "cpu"},
     )
 
-    # Embed and upload
-    texts = [d[0] for d in docs]
-    print(f"   Embedding {len(texts)} summaries...")
-    summary_embeddings = embeddings.embed_documents(texts)
-
-    import sys
-    sys.path.append(str(Path(__file__).resolve().parent))
-    from auth import supabase
-
-    rows = []
-    for (content, metadata), emb in zip(docs, summary_embeddings):
-        rows.append({
-            "content": content,
-            "embedding": emb,
-            "metadata": metadata
-        })
-
-    # Bulk insert
-    batch_size = 100
-    print(f"📤 Uploading {len(rows)} summaries to Supabase in batches of {batch_size}...")
-    for i in range(0, len(rows), batch_size):
-        supabase.table("documents").insert(rows[i:i+batch_size]).execute()
-
-    print(f"✅ Ingested {len(rows)} community summaries into Supabase.")
+    # Append to existing collection
+    vector_store = Chroma(
+        persist_directory=CHROMA_PATH,
+        embedding_function=embeddings,
+    )
+    vector_store.add_documents(docs)
+    print(f"✅ Ingested {len(docs)} community summaries into ChromaDB at {CHROMA_PATH}.")
 
 
 # ── Entry point ───────────────────────────────────────────────
@@ -225,7 +214,7 @@ def process_communities():
 
     print(f"Saved {len(summaries)} community summaries → {COMMUNITIES_OUT_PATH}")
 
-    store_summaries_in_supabase(summaries)
+    store_summaries_in_chroma(summaries)
 
 
 if __name__ == "__main__":
