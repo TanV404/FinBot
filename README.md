@@ -131,6 +131,7 @@ FinBot/
 │   ├── retriever.py          # Hybrid retrieval logic combining Graph & Vector DB
 │   ├── ingest.py             # Parses documents and creates networkx graph + vector database
 │   ├── communities.py        # Detects communities and runs Ollama summaries
+│   ├── evaluate_rag.py       # RAG automated evaluation harness (LLM-as-judge)
 │   └── visualize_graph.py    # Generates interactive network HTML visualization
 ├── frontend/                 # Vite + React + Tailwind CSS client application
 │   ├── src/                  # React source files (App.jsx chatbot layout)
@@ -139,8 +140,10 @@ FinBot/
 ├── data/                     # Source documents and database persistence
 │   ├── docs/                 # Wiki pages & raw financial data
 │   ├── chromadb/             # Pre-built ChromaDB vector collection (Git-tracked)
-│   └── networkx/             # Pre-built NetworkX graph files (Git-tracked)
+│   ├── networkx/             # Pre-built NetworkX graph files (Git-tracked)
+│   └── communities/          # Pre-built community summaries JSON (Git-tracked)
 ├── .env                      # Global backend environment configurations
+├── fetch_data.py             # Scrapes Wikipedia pages and fetches yfinance data
 ├── pyproject.toml / uv.lock  # Python dependencies managed via uv package manager
 └── run_pipeline.sh           # Executable script running the complete ingestion pipeline
 ```
